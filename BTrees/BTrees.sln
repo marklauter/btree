@@ -3,7 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33103.184
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BTrees.Tests", "BTrees.Tests\BTrees.Tests.csproj", "{935DFDD8-63FF-4056-AEFF-958D15D8AB65}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BTrees.Tests", "BTrees.Tests\BTrees.Tests.csproj", "{935DFDD8-63FF-4056-AEFF-958D15D8AB65}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{21A53E68-D537-4D80-B661-B0D758A0D2D8}"
+	ProjectSection(SolutionItems) = preProject
+		..\.editorconfig = ..\.editorconfig
+		..\.gitignore = ..\.gitignore
+		..\LICENSE = ..\LICENSE
+		..\README.md = ..\README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
