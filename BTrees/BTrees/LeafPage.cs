@@ -21,7 +21,7 @@
 
         public override (IPage<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
         {
-            if (!this.IsFull)
+            if (!this.IsOverflow)
             {
                 this.InsertInternal(key, value);
                 return (null, default);

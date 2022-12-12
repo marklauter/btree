@@ -6,7 +6,7 @@
         int Count { get; }
         int Size { get; }
         bool IsEmpty { get; }
-        bool IsFull { get; }
+        bool IsOverflow { get; }
         (IPage<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
     }
 }

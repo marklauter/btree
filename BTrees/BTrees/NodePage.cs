@@ -48,7 +48,7 @@
             }
 
 #pragma warning disable CS8604 // Possible null reference argument. - stfu, it's not null
-            if (!this.IsFull)
+            if (!this.IsOverflow)
             {
                 this.InsertInternal(newSubPagePivotKey, newSubPage);
                 return (null, default);
