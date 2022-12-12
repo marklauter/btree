@@ -1,4 +1,4 @@
-﻿namespace BTrees.Tests
+﻿namespace BTrees
 {
     internal interface IPage<TKey, TValue>
         where TKey : IComparable<TKey>

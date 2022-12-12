@@ -1,4 +1,4 @@
-﻿namespace BTrees.Tests
+﻿namespace BTrees
 {
     // todo: merge leaves when underflow condition arrises. ie: count < k
     internal class LeafPage<TKey, TValue>

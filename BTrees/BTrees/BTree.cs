@@ -1,4 +1,4 @@
-﻿namespace BTrees.Tests
+﻿namespace BTrees
 {
     public class BTree<TKey, TValue>
         where TKey : IComparable<TKey>

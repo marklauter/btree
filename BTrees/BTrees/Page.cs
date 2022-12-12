@@ -1,4 +1,4 @@
-namespace BTrees.Tests
+namespace BTrees
 {
     internal abstract class Page<TKey, TValue>
         : IPage<TKey, TValue>
