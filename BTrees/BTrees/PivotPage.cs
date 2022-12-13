@@ -1,19 +1,19 @@
 ﻿namespace BTrees
 {
     // todo: merge leaves when underflow condition arrises. ie: count < k
-    internal class NodePage<TKey, TValue>
+    internal class PivotPage<TKey, TValue>
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
         private readonly Page<TKey, TValue>[] children;
 
-        public NodePage(int size)
+        public PivotPage(int size)
             : base(size)
         {
             this.children = new Page<TKey, TValue>[size + 1];
         }
 
-        public NodePage(int size, Page<TKey, TValue> leftPage, Page<TKey, TValue> rightPage)
+        public PivotPage(int size, Page<TKey, TValue> leftPage, Page<TKey, TValue> rightPage)
             : this(size)
         {
             this.Keys[0] = rightPage.Keys[0];
@@ -22,12 +22,22 @@
             this.Count = 1;
         }
 
+        public PivotPage(int size, Page<TKey, TValue> leftPage, Page<TKey, TValue> rightPage, TKey pivotKey)
+            : this(size)
+        {
+            this.Keys[0] = pivotKey;
+            this.children[0] = leftPage;
+            this.children[1] = rightPage;
+            this.Count = 1;
+        }
+
         internal override Page<TKey, TValue> SelectSubtree(TKey key)
         {
+            // todo: faster with binary search
             var keys = new Span<TKey>(this.Keys);
-            for (var i = 0; i < keys.Length; i++)
+            for (var i = 0; i < this.Count; ++i)
             {
-                if (key.CompareTo(keys[i]) <= 0)
+                if (key.CompareTo(keys[i]) < 0)
                 {
                     // any left page
                     return this.children[i];
@@ -35,10 +45,10 @@
             }
 
             // right most page
-            return this.children[this.Count + 1];
+            return this.children[this.Count];
         }
 
-        public override (IPage<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
         {
             var page = this.SelectSubtree(key);
             var (newSubPage, newSubPagePivotKey) = page.Insert(key, value);
@@ -68,7 +78,7 @@
             return (newPage, newPivotKey);
         }
 
-        private void InsertInternal(TKey key, IPage<TKey, TValue> value)
+        private void InsertInternal(TKey key, Page<TKey, TValue> value)
         {
             var index = this.FindInsertionIndex(key);
             if (index != this.Count)
@@ -77,7 +87,7 @@
             }
 
             this.Keys[index] = key;
-            this.children[index + 1] = (Page<TKey, TValue>)value;
+            this.children[index + 1] = value;
             ++this.Count;
         }
 
@@ -90,14 +100,14 @@
             }
         }
 
-        private (NodePage<TKey, TValue> newPage, TKey newPivotKey) Split()
+        private (PivotPage<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
             var count = this.Count;
             var keys = new Span<TKey>(this.Keys);
-            var children = new Span<IPage<TKey, TValue>>(this.children);
-            var newPage = new NodePage<TKey, TValue>(this.Size);
+            var children = new Span<Page<TKey, TValue>>(this.children);
+            var newPage = new PivotPage<TKey, TValue>(this.Size);
             var newKeys = new Span<TKey>(newPage.Keys);
-            var newChildren = new Span<IPage<TKey, TValue>>(newPage.children);
+            var newChildren = new Span<Page<TKey, TValue>>(newPage.children);
 
             var newPivotIndex = count / 2;
             var copyFromIndex = newPivotIndex + 1;
@@ -109,10 +119,12 @@
                 ++j;
             }
 
+            newChildren[j] = children[count];
+
             newPage.Count = count - newPivotIndex;
             this.Count = newPivotIndex;
 
-            return (newPage, keys[newPivotIndex]);
+            return (newPage, newKeys[0]);
         }
     }
 }

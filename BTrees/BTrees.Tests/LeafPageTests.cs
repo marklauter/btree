@@ -125,7 +125,7 @@
 
             var (newPage, pivot) = page.Insert(4, 4);
             Assert.NotNull(newPage);
-            Assert.Equal(6, pivot);
+            Assert.Equal(7, pivot);
             Assert.Equal(6, page.Count);
             Assert.Equal(5, newPage.Count);
         }

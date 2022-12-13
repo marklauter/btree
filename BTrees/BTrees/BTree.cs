@@ -5,7 +5,7 @@
     {
         private readonly int pageSize;
         private int itemCount;
-        private readonly Page<TKey, TValue> root;
+        private Page<TKey, TValue> root;
 
         public BTree(int pageSize)
         {
@@ -13,10 +13,20 @@
             this.root = new LeafPage<TKey, TValue>(pageSize);
         }
 
-        private void Insert(TKey key, TValue value)
+        public void Insert(TKey key, TValue value)
         {
-            var page = this.root.SelectSubtree(key);
-            _ = page.Insert(key, value);
+            var (newSubPage, newPivotKey) = this.root.Insert(key, value);
+            if (newSubPage is not null)
+            {
+#pragma warning disable CS8604 // Possible null reference argument. - it's not null
+                this.root = new PivotPage<TKey, TValue>(
+                    this.pageSize,
+                    this.root,
+                    newSubPage,
+                    newPivotKey);
+#pragma warning restore CS8604 // Possible null reference argument.
+            }
+
             ++this.itemCount;
         }
     }

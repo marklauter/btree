@@ -1,11 +1,15 @@
-﻿namespace BTrees
+﻿using System.Diagnostics;
+
+namespace BTrees
 {
     // todo: merge leaves when underflow condition arrises. ie: count < k
+    [DebuggerDisplay("{Count}, {LeftChild}")]
     internal class LeafPage<TKey, TValue>
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
         private readonly TValue[] children;
+        internal TValue LeftChild => this.children[0];
 
         public LeafPage(int size)
             : base(size)
@@ -19,7 +23,7 @@
             return this;
         }
 
-        public override (IPage<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
         {
             if (!this.IsOverflow)
             {
@@ -71,7 +75,8 @@
             var newKeys = new Span<TKey>(newPage.Keys);
             var newChildren = new Span<TValue>(newPage.children);
 
-            var copyFromIndex = count / 2;
+            var newPivotIndex = count / 2;
+            var copyFromIndex = newPivotIndex + 1;
             var j = 0;
             for (var i = copyFromIndex; i < count; ++i)
             {
@@ -80,10 +85,10 @@
                 ++j;
             }
 
-            newPage.Count = count - copyFromIndex;
-            this.Count = copyFromIndex;
+            newPage.Count = count - newPivotIndex;
+            this.Count = newPivotIndex;
 
-            return (newPage, newPage.Keys[0]);
+            return (newPage, newKeys[0]);
         }
     }
 }

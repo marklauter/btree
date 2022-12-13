@@ -1,7 +1,6 @@
 namespace BTrees
 {
     internal abstract class Page<TKey, TValue>
-        : IPage<TKey, TValue>
         where TKey : IComparable<TKey>
     {
         public Page(int size)
@@ -10,7 +9,7 @@ namespace BTrees
             this.Keys = new TKey[size];
         }
 
-        public abstract (IPage<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
+        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
 
         internal abstract Page<TKey, TValue> SelectSubtree(TKey key);
 
