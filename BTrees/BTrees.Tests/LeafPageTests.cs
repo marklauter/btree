@@ -60,7 +60,7 @@
         }
 
         [Fact]
-        public void FindInsertionIndexTest()
+        public void IndexOfKeyTest()
         {
             var page = new LeafPage<int, int>(this.pageSize);
             _ = page.Insert(1, 1); // 0 goes to index 0
@@ -72,20 +72,23 @@
             _ = page.Insert(9, 9);
             _ = page.Insert(10, 10); // 11 goes to index 8
 
-            var mid = page.FindInsertionIndex(3);
-            Assert.Equal(2, mid);
+            var index = page.IndexOfKey(3);
+            Assert.Equal(2, ~index);
 
-            mid = page.FindInsertionIndex(4);
-            Assert.Equal(3, mid);
+            index = page.IndexOfKey(4);
+            Assert.Equal(2, index);
 
-            mid = page.FindInsertionIndex(8);
-            Assert.Equal(6, mid);
+            index = page.IndexOfKey(8);
+            Assert.Equal(6, ~index);
 
-            mid = page.FindInsertionIndex(0);
-            Assert.Equal(0, mid);
+            index = page.IndexOfKey(0);
+            Assert.Equal(0, ~index);
 
-            mid = page.FindInsertionIndex(11);
-            Assert.Equal(8, mid);
+            index = page.IndexOfKey(10);
+            Assert.Equal(7, index);
+
+            index = page.IndexOfKey(11);
+            Assert.Equal(8, ~index);
         }
 
         [Fact]

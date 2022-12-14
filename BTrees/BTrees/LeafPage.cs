@@ -46,7 +46,13 @@ namespace BTrees
 
         internal void InsertInternal(TKey key, TValue value)
         {
-            var index = this.FindInsertionIndex(key);
+            var index = this.IndexOfKey(key);
+            index = index > 0
+                ? index + 1
+                : index < 0
+                    ? ~index
+                    : index;
+
             if (index != this.Count)
             {
                 this.ShiftRight(index);

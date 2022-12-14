@@ -13,51 +13,39 @@ namespace BTrees
 
         internal abstract Page<TKey, TValue> SelectSubtree(TKey key);
 
-        internal int FindInsertionIndex(TKey key)
+        internal int IndexOfKey(TKey key)
         {
             if (this.IsEmpty)
             {
                 return 0;
             }
 
-            var high = this.Count - 1;
             var low = 0;
+            var high = this.Count - 1;
+            var keys = new Span<TKey>(this.Keys);
 
-            // check edge cases first
-            if (key.CompareTo(this.Keys[high]) >= 0)
+            while (low <= high)
             {
-                // insert at tail
-                return this.Count;
-            }
+                var middle = (low + high) / 2;
 
-            if (key.CompareTo(this.Keys[low]) <= 0)
-            {
-                // insert at head
-                return 0;
-            }
+                var comparison = keys[middle].CompareTo(key);
 
-            var index = 0;
-            while (low < high)
-            {
-                index = (high + low) / 2;
-
-                var comparison = key.CompareTo(this.Keys[index]);
-                if (comparison > 0)
+                if (comparison == 0)
                 {
-                    low = index + 1;
-                    continue;
+                    return middle;
                 }
 
                 if (comparison < 0)
                 {
-                    high = index;
+                    low = middle + 1;
                     continue;
                 }
 
-                return index + 1;
+                high = middle - 1;
+                continue;
             }
 
-            return index;
+            return ~low;
         }
 
         internal TKey[] Keys { get; }

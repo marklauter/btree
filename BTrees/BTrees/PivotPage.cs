@@ -33,19 +33,27 @@
 
         internal override Page<TKey, TValue> SelectSubtree(TKey key)
         {
-            // todo: faster with binary search
-            var keys = new Span<TKey>(this.Keys);
-            for (var i = 0; i < this.Count; ++i)
+            var index = this.IndexOfKey(key);
+            if (index < 0)
             {
-                if (key.CompareTo(keys[i]) < 0)
-                {
-                    // any left page
-                    return this.children[i];
-                }
+                index = ~index;
             }
 
-            // right most page
-            return this.children[this.Count];
+            return this.children[index];
+
+            // todo: faster with binary search
+            //var keys = new Span<TKey>(this.Keys);
+            //for (var i = 0; i < this.Count; ++i)
+            //{
+            //    if (key.CompareTo(keys[i]) < 0)
+            //    {
+            //        // any left page
+            //        return this.children[i];
+            //    }
+            //}
+
+            //// right most page
+            //return this.children[this.Count];
         }
 
         public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
@@ -80,7 +88,13 @@
 
         private void InsertInternal(TKey key, Page<TKey, TValue> value)
         {
-            var index = this.FindInsertionIndex(key);
+            var index = this.IndexOfKey(key);
+            index = index > 0
+                ? index + 1
+                : index < 0
+                    ? ~index
+                    : index;
+
             if (index != this.Count)
             {
                 this.ShiftRight(index);
