@@ -25,14 +25,14 @@
             var rightpage = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize / 2; ++i)
             {
-                _ = leftpage.Insert(i, i + 1);
-                _ = rightpage.Insert(i + 5, i + 6);
+                _ = leftpage.Write(i, i + 1);
+                _ = rightpage.Write(i + 5, i + 6);
             }
 
             var originalCount = leftpage.Count;
             var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage);
             Assert.Equal(1, pivotPage.Count);
-            _ = pivotPage.Insert(4, 5);
+            _ = pivotPage.Write(4, 5);
 
             Assert.Equal(originalCount, leftpage.Count - 1);
             Assert.Equal(originalCount, rightpage.Count);

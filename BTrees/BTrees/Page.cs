@@ -1,5 +1,8 @@
+using System.Diagnostics;
+
 namespace BTrees
 {
+    [DebuggerDisplay("{Count}")]
     internal abstract class Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
@@ -9,7 +12,8 @@ namespace BTrees
             this.Keys = new TKey[size];
         }
 
-        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
+        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Write(TKey key, TValue value);
+        public abstract bool TryRead(TKey key, out TValue? value);
 
         internal abstract Page<TKey, TValue> SelectSubtree(TKey key);
 

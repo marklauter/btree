@@ -1,6 +1,9 @@
-﻿namespace BTrees
+﻿using System.Diagnostics;
+
+namespace BTrees
 {
-    // todo: merge leaves when underflow condition arrises. ie: count < k
+    // todo: merge leaves when underflow condition arrises. ie: count < k (or 1/2 pageSize)
+    [DebuggerDisplay("PivotPage {Count}")]
     internal class PivotPage<TKey, TValue>
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
@@ -40,26 +43,12 @@
             }
 
             return this.children[index];
-
-            // todo: faster with binary search
-            //var keys = new Span<TKey>(this.Keys);
-            //for (var i = 0; i < this.Count; ++i)
-            //{
-            //    if (key.CompareTo(keys[i]) < 0)
-            //    {
-            //        // any left page
-            //        return this.children[i];
-            //    }
-            //}
-
-            //// right most page
-            //return this.children[this.Count];
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Write(TKey key, TValue value)
         {
             var page = this.SelectSubtree(key);
-            var (newSubPage, newSubPagePivotKey) = page.Insert(key, value);
+            var (newSubPage, newSubPagePivotKey) = page.Write(key, value);
             if (newSubPage is null)
             {
                 return (null, default);
@@ -68,25 +57,25 @@
 #pragma warning disable CS8604 // Possible null reference argument. - stfu, it's not null
             if (!this.IsOverflow)
             {
-                this.InsertInternal(newSubPagePivotKey, newSubPage);
+                this.Insert(newSubPagePivotKey, newSubPage);
                 return (null, default);
             }
 
             var (newPage, newPivotKey) = this.Split();
             if (key.CompareTo(newPivotKey) <= 0)
             {
-                this.InsertInternal(newSubPagePivotKey, newSubPage);
+                this.Insert(newSubPagePivotKey, newSubPage);
             }
             else
             {
-                newPage.InsertInternal(newSubPagePivotKey, newSubPage);
+                newPage.Insert(newSubPagePivotKey, newSubPage);
             }
 #pragma warning restore CS8604 // Possible null reference argument.
 
             return (newPage, newPivotKey);
         }
 
-        private void InsertInternal(TKey key, Page<TKey, TValue> value)
+        private void Insert(TKey key, Page<TKey, TValue> value)
         {
             var index = this.IndexOfKey(key);
             index = index > 0
@@ -105,7 +94,7 @@
             ++this.Count;
         }
 
-        internal void ShiftRight(int index)
+        private void ShiftRight(int index)
         {
             for (var i = this.Count - 1; i >= index; --i)
             {
@@ -139,6 +128,12 @@
             this.Count = newPivotIndex;
 
             return (newPage, newKeys[0]);
+        }
+
+        public override bool TryRead(TKey key, out TValue? value)
+        {
+            var page = this.SelectSubtree(key);
+            return page.TryRead(key, out value);
         }
     }
 }

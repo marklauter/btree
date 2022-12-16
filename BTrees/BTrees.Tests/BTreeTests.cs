@@ -8,10 +8,13 @@
         public void SplitTest()
         {
             var tree = new BTree<int, int>(this.pageSize);
-            for (var i = 0; i < this.pageSize * 5; ++i)
+            for (var i = 0; i < this.pageSize * 10; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
+
+            Assert.Equal(this.pageSize * 10, tree.Count);
+            Assert.Equal(3, tree.Depth);
         }
 
         public static int BinarySearch(int[] array, int target)
@@ -36,7 +39,7 @@
                 }
             }
 
-            return -left;
+            return ~left;
         }
 
         [Fact]
@@ -91,7 +94,7 @@
 
             var index = BinarySearch(numbers, 3);
             Assert.True(index < 0);
-            Assert.Equal(-3, index);
+            Assert.Equal(3, ~index);
         }
 
         [Fact]
@@ -101,7 +104,34 @@
 
             var index = BinarySearch(numbers, 9);
             Assert.True(index < 0);
-            Assert.Equal(-9, index);
+            Assert.Equal(9, ~index);
+        }
+
+        [Fact]
+        public void ReadReturnsValueForKey()
+        {
+            var tree = new BTree<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize * 5; ++i)
+            {
+                tree.Write(i + 1, i + 1);
+            }
+
+            var found = tree.TryRead(1, out var value);
+            Assert.True(found);
+            Assert.Equal(1, value);
+        }
+
+        [Fact]
+        public void ReadReturnsFalseWhenKeyIsNotFound()
+        {
+            var tree = new BTree<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize * 5; ++i)
+            {
+                tree.Write(i + 1, i + 1);
+            }
+
+            var found = tree.TryRead(this.pageSize * 10, out var _);
+            Assert.False(found);
         }
     }
 }

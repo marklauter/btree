@@ -3,13 +3,12 @@
 namespace BTrees
 {
     // todo: merge leaves when underflow condition arrises. ie: count < k
-    [DebuggerDisplay("{Count}, {LeftChild}")]
+    [DebuggerDisplay("LeafPage {Count}")]
     internal class LeafPage<TKey, TValue>
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
         private readonly TValue[] children;
-        internal TValue LeftChild => this.children[0];
 
         public LeafPage(int size)
             : base(size)
@@ -23,7 +22,7 @@ namespace BTrees
             return this;
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Write(TKey key, TValue value)
         {
             if (!this.IsOverflow)
             {
@@ -44,7 +43,7 @@ namespace BTrees
             return (newPage, newPivotKey);
         }
 
-        internal void InsertInternal(TKey key, TValue value)
+        private void InsertInternal(TKey key, TValue value)
         {
             var index = this.IndexOfKey(key);
             index = index > 0
@@ -63,7 +62,7 @@ namespace BTrees
             ++this.Count;
         }
 
-        internal void ShiftRight(int index)
+        private void ShiftRight(int index)
         {
             for (var i = this.Count - 1; i >= index; --i)
             {
@@ -95,6 +94,19 @@ namespace BTrees
             this.Count = newPivotIndex;
 
             return (newPage, newKeys[0]);
+        }
+
+        public override bool TryRead(TKey key, out TValue? value)
+        {
+            value = default;
+            var index = this.IndexOfKey(key);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            value = this.children[index];
+            return true;
         }
     }
 }
