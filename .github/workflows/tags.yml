@@ -1,0 +1,23 @@
+name: "Increment Tags"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "main" ]
+
+jobs: 
+  increment-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Increment Commit Tag
+        run: |
+          # Get the current tag
+          current_tag=$(git describe --abbrev=0 --tags)
+          # Increment the tag by 1
+          new_tag=$((current_tag + 1))
+          # Update the tag
+          git tag $new_tag
+          git push --tags      
