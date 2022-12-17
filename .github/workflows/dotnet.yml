@@ -19,8 +19,8 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
         fetch-depth: 0
+        dotnet-version: 7.0.x
     - name: Increment Commit Tag
       run: |
         current_tag=$(git describe --abbrev=0 --tags)
