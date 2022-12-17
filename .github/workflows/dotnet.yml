@@ -28,5 +28,5 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     - name: Build and deploy package
       run: |
-        dotnet build -c Release --no-restore
-        dotnet nuget push bin/Release/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
+        dotnet pack -c Release --no-restore
+        dotnet nuget push /BTrees/bin/Release/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
