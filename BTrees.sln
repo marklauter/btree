@@ -7,13 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BTrees.Tests", "BTrees.Test
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{21A53E68-D537-4D80-B661-B0D758A0D2D8}"
 	ProjectSection(SolutionItems) = preProject
-		..\.editorconfig = ..\.editorconfig
-		..\.gitignore = ..\.gitignore
-		..\LICENSE = ..\LICENSE
-		..\README.md = ..\README.md
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		LICENSE = LICENSE
+		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BTrees", "BTrees\BTrees.csproj", "{C7A8A980-512B-414E-8843-947E8AA32B05}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BTrees", "BTrees\BTrees.csproj", "{C7A8A980-512B-414E-8843-947E8AA32B05}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
