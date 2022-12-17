@@ -19,14 +19,15 @@ jobs:
           # Get the current tag
           current_tag=$(git describe --abbrev=0 --tags)
           echo "Current tag: $current_tag"
-          current_number=$(echo $current_tag | cut -d "v" -f 2)
-          echo "Numeric part of the tag: $current_number"
-          # Increment the number by 1
-          new_number=$((current_number + 1))
-          # Increment the tag by 1
+          # Extract the major version number
+          major=$(echo $current_tag | cut -d "." -f 1 | cut -d "v" -f 2)
+          # Extract the minor version number
+          minor=$(echo $current_tag | cut -d "." -f 2)
+          # Extract the patch number
+          patch=$(echo $current_tag | cut -d "." -f 3)
+          # Increment the patch number by 1
+          new_patch=$((patch + 1))
           # Update the tag
-          new_tag="v$new_number"
-          #new_tag=$((current_tag + 1))
-          # Update the tag
+          new_tag="v$major.$minor.$new_patch"
           git tag $new_tag
           git push --tags      
