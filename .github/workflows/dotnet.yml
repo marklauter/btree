@@ -26,8 +26,6 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-    - name: dir
-      run: dir
     - name: Build and deploy package
       run: |
         dotnet pack -c Release --no-restore
