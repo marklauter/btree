@@ -50,5 +50,6 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     - name: Build and deploy package
       run: |
+        echo current tag: $current_tag
         dotnet pack -c Release --no-restore -p:PackageVersion=$package_version
         dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
