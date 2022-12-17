@@ -27,7 +27,6 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Build and deploy package
-      env: GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         dotnet build -c Release --no-restore
-        dotnet nuget push bin/Release/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/marklauter/index.json
+        dotnet nuget push bin/Release/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
