@@ -31,4 +31,4 @@ jobs:
     - name: Build and deploy package
       run: |
         dotnet pack -c Release --no-restore
-        dotnet nuget push /btrees/bin/Release/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
+        dotnet nuget push btrees/bin/Release/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
