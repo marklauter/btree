@@ -16,6 +16,9 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          
       - name: Increment Commit Tag
         run: |
           current_tag=$(git describe --abbrev=0 --tags)
