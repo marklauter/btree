@@ -18,8 +18,15 @@ jobs:
         run: |
           # Get the current tag
           current_tag=$(git describe --abbrev=0 --tags)
+          echo "Current tag: $current_tag"
+          current_number=$(echo $current_tag | cut -d "v" -f 2)
+          echo "Numeric part of the tag: $current_number"
+          # Increment the number by 1
+          new_number=$((current_number + 1))
           # Increment the tag by 1
-          new_tag=$((current_tag + 1))
+          # Update the tag
+          new_tag="v$new_number"
+          #new_tag=$((current_tag + 1))
           # Update the tag
           git tag $new_tag
           git push --tags      
