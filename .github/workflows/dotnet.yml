@@ -20,7 +20,6 @@ jobs:
           fetch-depth: 0
           
       - name: Increment Commit Tag
-        id: incrementtag
         run: |
           current_tag=$(git describe --abbrev=0 --tags)
           echo current tag: $current_tag
@@ -32,7 +31,7 @@ jobs:
           package_version="$major.$minor.$new_patch"
           git tag $new_tag
           git push --tags
-          echo "PACKAGE_VERSION=$package_version" >> $GITHUB_OUTPUT
+          echo "PACKAGE_VERSION=$package_version" >> $GITHUB_ENV
   
   build:
     needs: version
@@ -53,5 +52,5 @@ jobs:
     - name: Build and deploy package
       run: |
         echo current tag: $current_tag
-        dotnet pack -c Release --no-restore -p:PackageVersion=${{ version.steps.incrementtag.PACKAGE_VERSION }}
+        dotnet pack -c Release --no-restore -p:PackageVersion=${{ env.PACKAGE_VERSION }}
         dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
