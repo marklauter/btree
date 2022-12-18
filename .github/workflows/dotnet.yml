@@ -34,6 +34,7 @@ jobs:
           package_version="$major.$minor.$new_patch"
           git tag $new_tag
           git push --tags    
+          echo "::set-output name=package_version::$package_version"
   
   build:
     needs: version
@@ -54,5 +55,5 @@ jobs:
     - name: Build and deploy package
       run: |
         echo current tag: $current_tag
-        dotnet pack -c Release --no-restore -p:PackageVersion=$package_version
+        dotnet pack -c Release --no-restore -p:PackageVersion=${{ needs.version.outputs.package_version }}
         dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
