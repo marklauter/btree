@@ -13,9 +13,7 @@ jobs:
   version:
     
     runs-on: ubuntu-latest
-    env: 
-      PACKAGE_VERSION: ''
-    
+   
     steps:
       - uses: actions/checkout@v3
         with:
@@ -33,8 +31,8 @@ jobs:
           new_tag="v$major.$minor.$new_patch"
           package_version="$major.$minor.$new_patch"
           git tag $new_tag
-          git push --tags    
-          echo "::set-env name=PACKAGE_VERSION::$package_version"
+          git push --tags
+          echo "PACKAGE_VERSION::$package_version" >> $GITHUB_ENV
   
   build:
     needs: version
@@ -55,5 +53,5 @@ jobs:
     - name: Build and deploy package
       run: |
         echo current tag: $current_tag
-        dotnet pack -c Release --no-restore -p:PackageVersion=$ENV_PACKAGE_VERSION
+        dotnet pack -c Release --no-restore -p:PackageVersion=${{ env.action_state }}
         dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
