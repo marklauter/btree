@@ -37,8 +37,6 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     steps:
-    - name: Packae Version
-      run: echo ${{ needs.version.outputs.PACKAGE_VERSION }}
     - uses: actions/checkout@v3
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -50,6 +48,8 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+    - name: Package Version
+      run: echo ${{ needs.version.outputs.PACKAGE_VERSION }}
     - name: Pack 
       run: dotnet pack -c Release --no-restore -p:PackageVersion=${{ needs.version.outputs.PACKAGE_VERSION }}
     - name: Deploy Nuget
