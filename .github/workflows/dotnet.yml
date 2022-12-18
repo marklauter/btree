@@ -11,14 +11,13 @@ on:
     
 jobs:
   version:
-    
     runs-on: ubuntu-latest
-   
+    outputs:
+      PACKAGE_VERSION: ${{ steps.version-tag.outputs.package_version }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          
       - name: Increment Commit Tag
         id: version-tag
         run: |
@@ -32,18 +31,14 @@ jobs:
           package_version="$major.$minor.$new_patch"
           git tag $new_tag
           git push --tags
-          echo "PACKAGE_VERSION=$package_version" > version.txt
-      - name: upload version
-        uses: actions/upload-artifact@v1
-        with: 
-          name: version
-          path: version.txt
+          echo "PACKAGE_VERSION=$package_version" >> $GITHUB_OUTPUT
   
   build:
     needs: version
     runs-on: ubuntu-latest
-  
     steps:
+    - name: Packae Version
+      run: echo ${{ needs.version.outputs.PACKAGE_VERSION }}
     - uses: actions/checkout@v3
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -55,30 +50,7 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-  
-  pack: 
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 7.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: download version
-      uses: action/download-artifact@v1
-      with:
-        name: version
-    - shell: bash
-      run: |
-        package_version=cat version/version.txt
-        echo "package version: $package_version"
-    - name: Build 
-      run: |
-        echo "new package version: $package_version
-        dotnet pack -c Release --no-restore -p:PackageVersion=$package_version
+    - name: Pack 
+      run: dotnet pack -c Release --no-restore -p:PackageVersion=${{ needs.version.outputs.PACKAGE_VERSION }}
     - name: Deploy Nuget
       run: dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
