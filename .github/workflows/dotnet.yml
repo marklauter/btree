@@ -13,6 +13,8 @@ jobs:
   version:
     
     runs-on: ubuntu-latest
+    outputs: 
+      package_version: ${{ steps.incrementtag.outputs.package_version }}
     
     steps:
       - uses: actions/checkout@v3
@@ -20,6 +22,7 @@ jobs:
           fetch-depth: 0
           
       - name: Increment Commit Tag
+        id: incrementtag
         run: |
           current_tag=$(git describe --abbrev=0 --tags)
           echo current tag: $current_tag
@@ -33,7 +36,7 @@ jobs:
           git push --tags    
   
   build:
-  
+    needs: version
     runs-on: ubuntu-latest
   
     steps:
