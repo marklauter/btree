@@ -32,7 +32,12 @@ jobs:
           package_version="$major.$minor.$new_patch"
           git tag $new_tag
           git push --tags
-          echo "PACKAGE_VERSION=$package_version" >> $GITHUB_OUTPUT
+          echo "PACKAGE_VERSION=$package_version" > version.txt
+      - name: upload version
+        uses: actions/upload-artifact@v1
+        with: 
+          name: version
+          path: version.txt
   
   build:
     needs: version
@@ -50,8 +55,30 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-    - name: Build and deploy package
+  
+  pack: 
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: download version
+      uses: action/download-artifact@v1
+      with:
+        name: version
+    - shell: bash
       run: |
-        echo "new package version: ${{ steps.version-tag.PACKAGE_VERSION }}
-        dotnet pack -c Release --no-restore -p:PackageVersion=${{ steps.version-tag.PACKAGE_VERSION }}
-        dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
+        package_version=cat version/version.txt
+        echo "package version: $package_version"
+    - name: Build 
+      run: |
+        echo "new package version: $package_version
+        dotnet pack -c Release --no-restore -p:PackageVersion=$package_version
+    - name: Deploy Nuget
+      run: dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
