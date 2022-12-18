@@ -34,7 +34,7 @@ jobs:
           package_version="$major.$minor.$new_patch"
           git tag $new_tag
           git push --tags
-          echo "PACKAGE_VERSION=$package_version" >> $GITHUB_ENV
+          env.PACKAGE_VERSION = $package_version
   
   build:
     needs: version
