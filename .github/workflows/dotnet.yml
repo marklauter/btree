@@ -63,6 +63,6 @@ jobs:
     - name: Package Version
       run: echo ${{ needs.version.outputs.PACKAGE_VERSION }}
     - name: Pack 
-      run: dotnet pack -c Release -o /nuget/ -p:PackageVersion=${{ needs.version.outputs.PACKAGE_VERSION }}
+      run: dotnet pack -c Release -o nuget -p:PackageVersion=${{ needs.version.outputs.PACKAGE_VERSION }}
     - name: Deploy Nuget
-      run: dotnet nuget push /nuget/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
+      run: dotnet nuget push nuget/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
