@@ -4,7 +4,7 @@
 name: .NET Deploy
 
 on:
-  merge:
+  release:
     branches: [ "main" ]
     
 jobs:
