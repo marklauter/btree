@@ -4,6 +4,15 @@
 		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+		<PackageId>Giraffe.Db.BTrees</PackageId>
+		<Authors>Mark Lauter</Authors>
+		<Description>In-memory B+Tree.</Description>
+		<RepositoryUrl>https://github.com/marklauter/btree</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/marklauter/btree</PackageProjectUrl>
+		<RepositoryType>GIT</RepositoryType>
+		<PackageLicenseUrl>https://github.com/marklauter/btree/blob/main/LICENSE</PackageLicenseUrl>
 	</PropertyGroup>
 
 	<ItemGroup>
