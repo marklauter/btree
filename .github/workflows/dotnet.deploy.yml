@@ -33,7 +33,6 @@ jobs:
   
   deploy:
     needs: 
-    - test
     - version
     runs-on: ubuntu-latest
     steps:
