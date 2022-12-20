@@ -10,7 +10,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 10; ++i)
             {
-                tree.Write(i + 1, i + 1);
+                tree.Insert(i + 1, i + 1);
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
@@ -113,7 +113,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Write(i + 1, i + 1);
+                tree.Insert(i + 1, i + 1);
             }
 
             var found = tree.TryRead(1, out var value);
@@ -127,7 +127,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Write(i + 1, i + 1);
+                tree.Insert(i + 1, i + 1);
             }
 
             var found = tree.TryRead(this.pageSize * 10, out var _);
