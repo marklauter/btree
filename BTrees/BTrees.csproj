@@ -12,7 +12,7 @@
 		<RepositoryUrl>https://github.com/marklauter/btree</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/marklauter/btree</PackageProjectUrl>
 		<RepositoryType>GIT</RepositoryType>
-		<PackageLicenseUrl>https://github.com/marklauter/btree/blob/main/LICENSE</PackageLicenseUrl>
+		<PackageLicense>MIT License: https://github.com/marklauter/btree/blob/main/LICENSE</PackageLicense>
 	</PropertyGroup>
 
 	<ItemGroup>
