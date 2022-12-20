@@ -9,11 +9,21 @@ namespace BTrees
         where TKey : IComparable<TKey>
     {
         private readonly TValue[] children;
+        private readonly LeafPage<TKey, TValue>? leftSibling;
+        private LeafPage<TKey, TValue>? rightSibling;
 
         public LeafPage(int size)
             : base(size)
         {
             this.children = new TValue[size];
+        }
+
+        private LeafPage(
+            int size,
+            LeafPage<TKey, TValue> leftSibling)
+            : this(size)
+        {
+            this.leftSibling = leftSibling ?? throw new ArgumentNullException(nameof(leftSibling));
         }
 
         internal override Page<TKey, TValue> SelectSubtree(TKey key)
@@ -76,7 +86,8 @@ namespace BTrees
             var count = this.Count;
             var keys = new Span<TKey>(this.Keys);
             var children = new Span<TValue>(this.children);
-            var newPage = new LeafPage<TKey, TValue>(this.Size);
+            var newPage = new LeafPage<TKey, TValue>(this.Size, this);
+            this.rightSibling = newPage;
             var newKeys = new Span<TKey>(newPage.Keys);
             var newChildren = new Span<TValue>(newPage.children);
 
