@@ -10,7 +10,23 @@ on:
     branches: [ "main" ]
     
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+
   version:
+    needs: build
     runs-on: ubuntu-latest
     outputs:
       PACKAGE_VERSION: ${{ steps.version-tag.outputs.package_version }}
@@ -33,8 +49,10 @@ jobs:
           git push --tags
           echo "PACKAGE_VERSION=$package_version" >> $GITHUB_OUTPUT
   
-  build:
-    needs: version
+  deploy:
+    needs: 
+    - version
+    - build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -44,13 +62,9 @@ jobs:
         dotnet-version: 7.0.x
     - name: Restore dependencies
       run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
     - name: Package Version
       run: echo ${{ needs.version.outputs.PACKAGE_VERSION }}
     - name: Pack 
-      run: dotnet pack -c Release --no-restore -p:PackageVersion=${{ needs.version.outputs.PACKAGE_VERSION }}
+      run: dotnet pack -c Release -o /nuget/ --no-restore -p:PackageVersion=${{ needs.version.outputs.PACKAGE_VERSION }}
     - name: Deploy Nuget
-      run: dotnet nuget push BTrees/bin/Release/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
+      run: dotnet nuget push /nuget/*.nupkg --skip-duplicate -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/marklauter/index.json
