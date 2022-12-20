@@ -45,11 +45,11 @@ namespace BTrees
             return this.children[index];
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Write(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
         {
             var page = this.SelectSubtree(key);
-            var (newSubPage, newSubPagePivotKey) = page.Write(key, value);
-            if (newSubPage is null)
+            var (newSubTree, newSubTreePivotKey) = page.Insert(key, value);
+            if (newSubTree is null)
             {
                 return (null, default);
             }
@@ -57,25 +57,22 @@ namespace BTrees
 #pragma warning disable CS8604 // Possible null reference argument. - stfu, it's not null
             if (!this.IsOverflow)
             {
-                this.Insert(newSubPagePivotKey, newSubPage);
+                this.InsertInternal(newSubTreePivotKey, newSubTree);
                 return (null, default);
             }
 
             var (newPage, newPivotKey) = this.Split();
-            if (key.CompareTo(newPivotKey) <= 0)
-            {
-                this.Insert(newSubPagePivotKey, newSubPage);
-            }
-            else
-            {
-                newPage.Insert(newSubPagePivotKey, newSubPage);
-            }
+            var pivotPage = key.CompareTo(newPivotKey) <= 0
+                ? this
+                : (PivotPage<TKey, TValue>)newPage;
+
+            pivotPage.InsertInternal(newSubTreePivotKey, newSubTree);
 #pragma warning restore CS8604 // Possible null reference argument.
 
             return (newPage, newPivotKey);
         }
 
-        private void Insert(TKey key, Page<TKey, TValue> value)
+        private void InsertInternal(TKey key, Page<TKey, TValue> value)
         {
             var index = this.IndexOfKey(key);
             index = index > 0
@@ -103,7 +100,7 @@ namespace BTrees
             }
         }
 
-        private (PivotPage<TKey, TValue> newPage, TKey newPivotKey) Split()
+        public override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
             var count = this.Count;
             var keys = new Span<TKey>(this.Keys);

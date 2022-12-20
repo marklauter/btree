@@ -12,7 +12,8 @@ namespace BTrees
             this.Keys = new TKey[size];
         }
 
-        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Write(TKey key, TValue value);
+        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
+        public abstract (Page<TKey, TValue> newPage, TKey newPivotKey) Split();
         public abstract bool TryRead(TKey key, out TValue? value);
 
         internal abstract Page<TKey, TValue> SelectSubtree(TKey key);

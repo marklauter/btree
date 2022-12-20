@@ -22,7 +22,7 @@
         public void InsertIncrememtsCount()
         {
             var page = new LeafPage<int, int>(this.pageSize);
-            _ = page.Write(1, 1);
+            _ = page.Insert(1, 1);
             Assert.Equal(1, page.Count);
         }
 
@@ -63,14 +63,14 @@
         public void IndexOfKeyTest()
         {
             var page = new LeafPage<int, int>(this.pageSize);
-            _ = page.Write(1, 1); // 0 goes to index 0
-            _ = page.Write(2, 2); // 3 goes to index 2
-            _ = page.Write(4, 4); // 4 goes to index 3
-            _ = page.Write(5, 5);
-            _ = page.Write(6, 6);
-            _ = page.Write(7, 7); // 8 goes to index 6
-            _ = page.Write(9, 9);
-            _ = page.Write(10, 10); // 11 goes to index 8
+            _ = page.Insert(1, 1); // 0 goes to index 0
+            _ = page.Insert(2, 2); // 3 goes to index 2
+            _ = page.Insert(4, 4); // 4 goes to index 3
+            _ = page.Insert(5, 5);
+            _ = page.Insert(6, 6);
+            _ = page.Insert(7, 7); // 8 goes to index 6
+            _ = page.Insert(9, 9);
+            _ = page.Insert(10, 10); // 11 goes to index 8
 
             var index = page.IndexOfKey(3);
             Assert.Equal(2, ~index);
@@ -95,22 +95,22 @@
         public void SortedInsertTest()
         {
             var page = new LeafPage<int, int>(this.pageSize);
-            _ = page.Write(1, 1); // 0 goes to index 0
-            _ = page.Write(2, 2); // 3 goes to index 2
-            _ = page.Write(4, 4);
-            _ = page.Write(5, 5);
-            _ = page.Write(6, 6);
-            _ = page.Write(7, 7); // 8 goes to index 6
-            _ = page.Write(9, 9);
-            _ = page.Write(10, 10); // 11 goes to index 8
+            _ = page.Insert(1, 1); // 0 goes to index 0
+            _ = page.Insert(2, 2); // 3 goes to index 2
+            _ = page.Insert(4, 4);
+            _ = page.Insert(5, 5);
+            _ = page.Insert(6, 6);
+            _ = page.Insert(7, 7); // 8 goes to index 6
+            _ = page.Insert(9, 9);
+            _ = page.Insert(10, 10); // 11 goes to index 8
 
-            _ = page.Write(3, 3);
+            _ = page.Insert(3, 3);
             var sortedKeys = page.Keys
                 .Take(page.Count)
                 .Order();
             Assert.Equal(sortedKeys, page.Keys.Take(page.Count));
 
-            _ = page.Write(8, 8);
+            _ = page.Insert(8, 8);
             sortedKeys = page.Keys
                 .Take(page.Count)
                 .Order();
@@ -123,10 +123,10 @@
             var page = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < page.Size; i++)
             {
-                _ = page.Write(i + 1, i + 1);
+                _ = page.Insert(i + 1, i + 1);
             }
 
-            var (newPage, pivot) = page.Write(4, 4);
+            var (newPage, pivot) = page.Insert(4, 4);
             Assert.NotNull(newPage);
             Assert.Equal(7, pivot);
             Assert.Equal(6, page.Count);

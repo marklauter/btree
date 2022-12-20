@@ -22,7 +22,7 @@ namespace BTrees
             return this;
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Write(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
         {
             if (!this.IsOverflow)
             {
@@ -37,7 +37,7 @@ namespace BTrees
             }
             else
             {
-                newPage.InsertInternal(key, value);
+                ((LeafPage<TKey, TValue>)newPage).InsertInternal(key, value);
             }
 
             return (newPage, newPivotKey);
@@ -71,7 +71,7 @@ namespace BTrees
             }
         }
 
-        private (LeafPage<TKey, TValue> newPage, TKey newPivotKey) Split()
+        public override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
             var count = this.Count;
             var keys = new Span<TKey>(this.Keys);

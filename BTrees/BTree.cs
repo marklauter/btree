@@ -21,7 +21,7 @@ namespace BTrees
 
         public void Write(TKey key, TValue value)
         {
-            var (newSubPage, newPivotKey) = this.root.Write(key, value);
+            var (newSubPage, newPivotKey) = this.root.Insert(key, value);
             if (newSubPage is not null)
             {
 #pragma warning disable CS8604 // Possible null reference argument. - it's not null
