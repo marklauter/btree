@@ -8,6 +8,7 @@ namespace BTrees
         where TKey : IComparable<TKey>
     {
         public long Count { get; private set; }
+
         public int Depth { get; private set; }
 
         private readonly int pageSize;
@@ -19,7 +20,7 @@ namespace BTrees
             this.root = new LeafPage<TKey, TValue>(pageSize);
         }
 
-        public void Write(TKey key, TValue value)
+        public void Insert(TKey key, TValue value)
         {
             var (newSubPage, newPivotKey) = this.root.Insert(key, value);
             if (newSubPage is not null)
@@ -40,6 +41,21 @@ namespace BTrees
         public bool TryRead(TKey key, out TValue? value)
         {
             return this.root.TryRead(key, out value);
+        }
+
+        // todo: add unit tests
+        public IEnumerable<TValue> Read(OpenRange<TKey> range)
+        {
+            // todo: this can use the leaf page's right sibling
+            throw new NotImplementedException();
+        }
+
+        // todo: add unit tests
+        public IEnumerable<TValue> Read(ClosedRange<TKey> range)
+        {
+            // todo: this can use the leaf page's right sibling
+            // todo: if we identify the left and right most pages then we can pre-load first, last and all pages between that are involved in the range scan
+            throw new NotImplementedException();
         }
     }
 }
