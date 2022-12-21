@@ -14,7 +14,7 @@
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
-            Assert.Equal(3, tree.Depth);
+            Assert.Equal(3, tree.Degree);
         }
 
         public static int BinarySearch(int[] array, int target)
@@ -132,6 +132,19 @@
 
             var found = tree.TryRead(this.pageSize * 10, out var _);
             Assert.False(found);
+        }
+
+        [Fact]
+        public void DeleteMergesUnderFlowLeaves()
+        {
+            var tree = new BTree<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize * 5; ++i)
+            {
+                tree.Insert(i + 1, i + 1);
+            }
+
+            Assert.Equal(2, tree.Degree);
+
         }
     }
 }

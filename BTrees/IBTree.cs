@@ -4,10 +4,17 @@
         where TKey : IComparable<TKey>
     {
         long Count { get; }
-        int Depth { get; }
+
+        int Degree { get; }
+
         void Insert(TKey key, TValue value);
+
+        void Delete(TKey key);
+
         bool TryRead(TKey key, out TValue? value);
+
         IEnumerable<TValue> Read(OpenRange<TKey> range);
+
         IEnumerable<TValue> Read(ClosedRange<TKey> range);
     }
 }

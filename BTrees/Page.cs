@@ -6,19 +6,39 @@ namespace BTrees
     internal abstract class Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
+        internal TKey[] Keys { get; }
+
+        public int Count { get; protected set; }
+        public bool IsEmpty => this.Count == 0;
+        public bool IsUnderFlow => this.Count < this.Size / 2;
+        public bool IsOverflow => this.Count == this.Size;
+        public Page<TKey, TValue>? LeftSibling { get; }
+        public Page<TKey, TValue>? RightSibling { get; protected set; }
+        public int Size { get; }
+
+        #region CTOR
         public Page(int size)
         {
             this.Size = size;
             this.Keys = new TKey[size];
         }
 
-        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
+        protected Page(
+            int size,
+            Page<TKey, TValue> leftSibling)
+            : this(size)
+        {
+            this.LeftSibling = leftSibling ?? throw new ArgumentNullException(nameof(leftSibling));
+        }
+        #endregion
 
-        public abstract (Page<TKey, TValue> newPage, TKey newPivotKey) Split();
-
-        public abstract bool TryRead(TKey key, out TValue? value);
-
+        /// <summary>
+        /// Merge with left, right or both siblings.
+        /// </summary>
+        /// <returns>Pivot key to remove from parent.</returns>
+        internal abstract TKey Merge();
         internal abstract Page<TKey, TValue> SelectSubtree(TKey key);
+        internal abstract (Page<TKey, TValue> newPage, TKey newPivotKey) Split();
 
         internal int IndexOfKey(TKey key)
         {
@@ -55,16 +75,14 @@ namespace BTrees
             return ~low;
         }
 
-        internal TKey[] Keys { get; }
+        /// <summary>
+        /// Merge left on underflow.
+        /// </summary>
+        /// <returns>True if merge was required.</returns>
+        public abstract (bool wasMerged, TKey? deprecatedPivotKey) Delete(TKey key);
 
-        public int Count { get; protected set; }
+        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
 
-        public int Size { get; }
-
-        public bool IsEmpty => this.Count == 0;
-
-        public bool IsUnderFlow => this.Count < this.Size / 2;
-
-        public bool IsOverflow => this.Count == this.Size;
+        public abstract bool TryRead(TKey key, out TValue? value);
     }
 }

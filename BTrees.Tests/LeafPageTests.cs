@@ -120,17 +120,28 @@
         [Fact]
         public void SplitTest()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
-            for (var i = 0; i < page.Size; i++)
+            var leftPage = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < leftPage.Size; ++i)
             {
-                _ = page.Insert(i + 1, i + 1);
+                var (newPage, _) = leftPage.Insert(i, i);
+                Assert.Null(newPage);
             }
 
-            var (newPage, pivot) = page.Insert(4, 4);
-            Assert.NotNull(newPage);
-            Assert.Equal(7, pivot);
-            Assert.Equal(6, page.Count);
-            Assert.Equal(5, newPage.Count);
+            var (rightPage, pivot) = leftPage.Insert(this.pageSize, this.pageSize);
+            Assert.NotNull(rightPage);
+            Assert.Equal(5, pivot);
+            Assert.Equal(5, leftPage.Count);
+            Assert.Equal(6, rightPage.Count);
+
+            for (var i = 0; i < leftPage.Count; ++i)
+            {
+                Assert.Equal(i, leftPage.Keys[i]);
+            }
+
+            for (var i = 0; i < rightPage.Count; ++i)
+            {
+                Assert.Equal(i + pivot, rightPage.Keys[i]);
+            }
         }
     }
 }

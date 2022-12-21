@@ -9,7 +9,7 @@ namespace BTrees
     {
         public long Count { get; private set; }
 
-        public int Depth { get; private set; }
+        public int Degree { get; private set; }
 
         private readonly int pageSize;
         private Page<TKey, TValue> root;
@@ -18,6 +18,12 @@ namespace BTrees
         {
             this.pageSize = pageSize;
             this.root = new LeafPage<TKey, TValue>(pageSize);
+        }
+
+        public void Delete(TKey key)
+        {
+            _ = this.root.Delete(key);
+            // todo: merge the subtree up to root if the root is underflow and not a leaf
         }
 
         public void Insert(TKey key, TValue value)
@@ -32,7 +38,7 @@ namespace BTrees
                     newSubPage,
                     newPivotKey);
 #pragma warning restore CS8604 // Possible null reference argument.
-                ++this.Depth;
+                ++this.Degree;
             }
 
             ++this.Count;
