@@ -1,4 +1,4 @@
-﻿namespace BTrees
+﻿namespace BTrees.Ranges
 {
     public sealed class ClosedRange<TKey>
         where TKey : IComparable<TKey>

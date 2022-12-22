@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace BTrees
+namespace BTrees.Pages
 {
     // todo: merge leaves when underflow condition arrises. ie: count < k
     [DebuggerDisplay("LeafPage {Count}")]
@@ -65,17 +65,24 @@ namespace BTrees
             }
         }
 
-        internal override TKey Merge()
+        internal override void Merge(Page<TKey, TValue> sourcePage)
         {
-            // todo: redistribute or merge?
-            /*
-In a B-tree, if a page has an underflow (i.e., it has fewer keys than the minimum required), it is possible to borrow a key from one of its siblings to restore the balance of keys. This operation is called "redistribution." If a page's siblings do not have enough keys to borrow, it may be necessary to merge the underflowing page with one of its siblings.
+            var startIndex = this.Count;
+            var endIndex = sourcePage.Count + startIndex;
+            var keys = new Span<TKey>(this.Keys);
+            var children = new Span<TValue>(this.children);
+            var sourceKeys = new Span<TKey>(this.Keys);
+            var sourceChildren = new Span<TValue>(this.children);
 
-When merging two pages, the keys and values from both pages are combined into a single page, and this new page becomes the child of the parent of the two original pages. The parent node may need to be modified to reflect the changes to its child nodes. If the parent node also has an underflow after the merge, the process can be repeated until the tree is balanced.
+            var j = 0;
+            for (var i = startIndex; i < endIndex; ++i)
+            {
+                keys[i] = sourceKeys[j];
+                children[i] = sourceChildren[j];
+                ++j;
+            }
 
-It is important to maintain the balance of keys in a B-tree, as this helps to ensure that the tree remains efficient for searches, insertions, and deletions. When a page has an underflow, it is necessary to take action to restore the balance of the tree. Redistributing keys or merging pages are both possible options for addressing an underflow.
-             */
-            throw new NotImplementedException();
+            this.Count = endIndex;
         }
 
         internal override Page<TKey, TValue> SelectSubtree(TKey key)
@@ -109,24 +116,46 @@ It is important to maintain the balance of keys in a B-tree, as this helps to en
             return (newPage, newKeys[0]);
         }
 
-        public override (bool wasMerged, TKey? deprecatedPivotKey) Delete(TKey key)
+        public override bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo)
         {
+            mergeInfo.merged = false;
+            mergeInfo.deprecatedPivotKey = default;
+
             var index = this.IndexOfKey(key);
             if (index < 0)
             {
-                throw new KeyNotFoundException($"{key}");
+                return false;
             }
 
             this.ShiftLeft(index);
             --this.Count;
 
-            var isUnderFlow = this.IsUnderFlow;
+            if (this.IsUnderFlow)
+            {
+                var leftSiblingCount = this.LeftSibling is null
+                    ? this.Size
+                    : this.LeftSibling.Count;
 
-            var deprecatedPivotKey = this.IsUnderFlow
-                ? this.Merge()
-                : default;
+                var rightSiblingCount = this.RightSibling is null
+                    ? this.Size
+                    : this.RightSibling.Count;
 
-            return (isUnderFlow, deprecatedPivotKey);
+                var mergeCandidate = leftSiblingCount < rightSiblingCount
+                    ? this.LeftSibling
+                    : this.RightSibling;
+
+                if (this.CanMerge(mergeCandidate))
+                {
+                    mergeInfo.deprecatedPivotKey = this.Keys[0];
+                    mergeInfo.merged = true;
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference. - CanMerge would return false if mergeCandiate is was null
+                    mergeCandidate.Merge(this);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+                }
+            }
+
+            return true;
         }
 
         public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)

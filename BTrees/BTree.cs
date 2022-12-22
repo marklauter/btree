@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using BTrees.Pages;
+using BTrees.Ranges;
+using System.Diagnostics;
 
 namespace BTrees
 {
@@ -22,7 +24,7 @@ namespace BTrees
 
         public void Delete(TKey key)
         {
-            _ = this.root.Delete(key);
+            _ = this.root.TryDelete(key);
             // todo: merge the subtree up to root if the root is underflow and not a leaf
         }
 

@@ -1,4 +1,6 @@
-﻿namespace BTrees
+﻿using BTrees.Ranges;
+
+namespace BTrees
 {
     public interface IBTree<TKey, TValue>
         where TKey : IComparable<TKey>

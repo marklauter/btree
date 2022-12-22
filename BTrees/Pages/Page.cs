@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace BTrees
+namespace BTrees.Pages
 {
     [DebuggerDisplay("{Count}")]
     internal abstract class Page<TKey, TValue>
@@ -33,10 +33,9 @@ namespace BTrees
         #endregion
 
         /// <summary>
-        /// Merge with left, right or both siblings.
+        /// Merge source page into current page
         /// </summary>
-        /// <returns>Pivot key to remove from parent.</returns>
-        internal abstract TKey Merge();
+        internal abstract void Merge(Page<TKey, TValue> sourcePage);
         internal abstract Page<TKey, TValue> SelectSubtree(TKey key);
         internal abstract (Page<TKey, TValue> newPage, TKey newPivotKey) Split();
 
@@ -75,11 +74,17 @@ namespace BTrees
             return ~low;
         }
 
+        internal bool CanMerge(Page<TKey, TValue>? sourcePage)
+        {
+            return sourcePage is not null
+                && this.Count + sourcePage.Count <= this.Size;
+        }
+
         /// <summary>
         /// Merge left on underflow.
         /// </summary>
         /// <returns>True if merge was required.</returns>
-        public abstract (bool wasMerged, TKey? deprecatedPivotKey) Delete(TKey key);
+        public abstract bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo);
 
         public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
 
