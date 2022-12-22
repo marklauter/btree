@@ -2,13 +2,12 @@
 
 namespace BTrees.Pages
 {
-    // todo: merge leaves when underflow condition arrises. ie: count < k (or 1/2 pageSize)
     [DebuggerDisplay("PivotPage {Count}")]
     internal class PivotPage<TKey, TValue>
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        private readonly Page<TKey, TValue>[] children;
+        internal readonly Page<TKey, TValue>[] children;
 
         #region CTOR
         public PivotPage(int size)
@@ -56,7 +55,7 @@ namespace BTrees.Pages
             ++this.Count;
         }
 
-        private void ShiftLeft(int index)
+        protected override void ShiftLeft(int index)
         {
             for (var i = index; i < this.Count - 1; ++i)
             {
@@ -65,7 +64,7 @@ namespace BTrees.Pages
             }
         }
 
-        private void ShiftRight(int index)
+        protected override void ShiftRight(int index)
         {
             for (var i = this.Count - 1; i >= index; --i)
             {
@@ -144,36 +143,9 @@ namespace BTrees.Pages
 
             if (deleted && subTreeMergeInfo.merged)
             {
-#pragma warning disable CS8604 // Possible null reference argument. when merged is true, deprecatedPivotKey is not null
-                var index = this.IndexOfKey(subTreeMergeInfo.deprecatedPivotKey);
+#pragma warning disable CS8604 // Possible null reference argument.
+                _ = this.RemoveKey(subTreeMergeInfo.deprecatedPivotKey, out mergeInfo);
 #pragma warning restore CS8604 // Possible null reference argument.
-                this.ShiftLeft(index);
-                --this.Count;
-
-                if (this.IsUnderFlow)
-                {
-                    var leftSiblingCount = this.LeftSibling is null
-                        ? this.Size
-                        : this.LeftSibling.Count;
-
-                    var rightSiblingCount = this.RightSibling is null
-                        ? this.Size
-                        : this.RightSibling.Count;
-
-                    var mergeCandidate = leftSiblingCount < rightSiblingCount
-                        ? this.LeftSibling
-                        : this.RightSibling;
-
-                    if (this.CanMerge(mergeCandidate))
-                    {
-                        mergeInfo.deprecatedPivotKey = this.Keys[0];
-                        mergeInfo.merged = true;
-
-#pragma warning disable CS8602 // Dereference of a possibly null reference. - CanMerge would return false if mergeCandiate is was null
-                        mergeCandidate.Merge(this);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-                    }
-                }
             }
 
             return deleted;

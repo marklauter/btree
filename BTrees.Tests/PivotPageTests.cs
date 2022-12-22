@@ -1,4 +1,6 @@
-﻿namespace BTrees.Tests
+﻿using BTrees.Pages;
+
+namespace BTrees.Tests
 {
     public class PivotPageTests
     {

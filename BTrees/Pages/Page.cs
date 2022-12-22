@@ -32,6 +32,9 @@ namespace BTrees.Pages
         }
         #endregion
 
+        protected abstract void ShiftLeft(int index);
+        protected abstract void ShiftRight(int index);
+
         /// <summary>
         /// Merge source page into current page
         /// </summary>
@@ -78,6 +81,56 @@ namespace BTrees.Pages
         {
             return sourcePage is not null
                 && this.Count + sourcePage.Count <= this.Size;
+        }
+
+        internal bool RemoveKey(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo)
+        {
+            mergeInfo.merged = false;
+            mergeInfo.deprecatedPivotKey = default;
+
+            var index = this.IndexOfKey(key);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            this.ShiftLeft(index);
+            --this.Count;
+
+            if (this.IsEmpty)
+            {
+                mergeInfo.deprecatedPivotKey = this.Keys[0];
+                mergeInfo.merged = true;
+                return true;
+            }
+
+            if (this.IsUnderFlow)
+            {
+
+                var leftSiblingCount = this.LeftSibling is null
+                    ? this.Size
+                    : this.LeftSibling.Count;
+
+                var rightSiblingCount = this.RightSibling is null
+                    ? this.Size
+                    : this.RightSibling.Count;
+
+                var mergeCandidate = leftSiblingCount < rightSiblingCount
+                    ? this.LeftSibling
+                    : this.RightSibling;
+
+                if (this.CanMerge(mergeCandidate))
+                {
+                    mergeInfo.deprecatedPivotKey = this.Keys[0];
+                    mergeInfo.merged = true;
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference. - CanMerge would return false if mergeCandiate is was null
+                    mergeCandidate.Merge(this);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

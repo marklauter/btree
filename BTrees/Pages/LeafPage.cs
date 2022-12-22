@@ -2,13 +2,12 @@
 
 namespace BTrees.Pages
 {
-    // todo: merge leaves when underflow condition arrises. ie: count < k
     [DebuggerDisplay("LeafPage {Count}")]
     internal class LeafPage<TKey, TValue>
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        private readonly TValue[] children;
+        internal readonly TValue[] children;
 
         #region CTOR
         public LeafPage(int size)
@@ -47,7 +46,7 @@ namespace BTrees.Pages
             ++this.Count;
         }
 
-        private void ShiftLeft(int index)
+        protected override void ShiftLeft(int index)
         {
             for (var i = index; i < this.Count - 1; ++i)
             {
@@ -56,7 +55,7 @@ namespace BTrees.Pages
             }
         }
 
-        private void ShiftRight(int index)
+        protected override void ShiftRight(int index)
         {
             for (var i = this.Count - 1; i >= index; --i)
             {
@@ -118,44 +117,7 @@ namespace BTrees.Pages
 
         public override bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo)
         {
-            mergeInfo.merged = false;
-            mergeInfo.deprecatedPivotKey = default;
-
-            var index = this.IndexOfKey(key);
-            if (index < 0)
-            {
-                return false;
-            }
-
-            this.ShiftLeft(index);
-            --this.Count;
-
-            if (this.IsUnderFlow)
-            {
-                var leftSiblingCount = this.LeftSibling is null
-                    ? this.Size
-                    : this.LeftSibling.Count;
-
-                var rightSiblingCount = this.RightSibling is null
-                    ? this.Size
-                    : this.RightSibling.Count;
-
-                var mergeCandidate = leftSiblingCount < rightSiblingCount
-                    ? this.LeftSibling
-                    : this.RightSibling;
-
-                if (this.CanMerge(mergeCandidate))
-                {
-                    mergeInfo.deprecatedPivotKey = this.Keys[0];
-                    mergeInfo.merged = true;
-
-#pragma warning disable CS8602 // Dereference of a possibly null reference. - CanMerge would return false if mergeCandiate is was null
-                    mergeCandidate.Merge(this);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-                }
-            }
-
-            return true;
+            return this.RemoveKey(key, out mergeInfo);
         }
 
         public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)

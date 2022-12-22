@@ -24,8 +24,23 @@ namespace BTrees
 
         public void Delete(TKey key)
         {
-            _ = this.root.TryDelete(key);
-            // todo: merge the subtree up to root if the root is underflow and not a leaf
+            if (this.root.TryDelete(key, out var mergeInfo))
+            {
+                if (mergeInfo.merged && this.root is PivotPage<TKey, TValue> rootPage)
+                {
+#pragma warning disable CS8604 // Possible null reference argument. - it's not null
+                    if (this.root.RemoveKey(mergeInfo.deprecatedPivotKey, out _))
+                    {
+                        if (this.root.IsEmpty)
+                        {
+                            this.root = rootPage.children[0];
+                        }
+                    }
+#pragma warning restore CS8604 // Possible null reference argument.
+                }
+
+                --this.Count;
+            }
         }
 
         public void Insert(TKey key, TValue value)
