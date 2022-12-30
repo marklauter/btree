@@ -11,7 +11,7 @@ namespace BTrees
     {
         public long Count { get; private set; }
 
-        public int Degree { get; private set; }
+        public int Degree { get; private set; } = 1;
 
         private readonly int pageSize;
         private Page<TKey, TValue> root;
