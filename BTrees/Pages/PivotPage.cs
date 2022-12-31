@@ -145,6 +145,9 @@ namespace BTrees.Pages
 #pragma warning disable CS8604 // Possible null reference argument.
                 _ = this.RemoveKey(subTreeMergeInfo.deprecatedPivotKey, out mergeInfo);
 #pragma warning restore CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                this.children[this.Count + 1] = null;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
             }
 
             return deleted;

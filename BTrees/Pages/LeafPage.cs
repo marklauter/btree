@@ -68,10 +68,12 @@ namespace BTrees.Pages
         {
             var startIndex = this.Count;
             var endIndex = sourcePage.Count + startIndex;
+
             var keys = new Span<TKey>(this.Keys);
             var children = new Span<TValue>(this.children);
-            var sourceKeys = new Span<TKey>(this.Keys);
-            var sourceChildren = new Span<TValue>(this.children);
+
+            var sourceKeys = new Span<TKey>(sourcePage.Keys);
+            var sourceChildren = new Span<TValue>(((LeafPage<TKey, TValue>)sourcePage).children);
 
             var j = 0;
             for (var i = startIndex; i < endIndex; ++i)

@@ -88,6 +88,10 @@ namespace BTrees.Pages
         {
             mergeInfo.merged = false;
             mergeInfo.deprecatedPivotKey = default;
+            if (this.IsEmpty)
+            {
+                return false;
+            }
 
             var index = this.IndexOfKey(key);
             if (index < 0)
@@ -141,6 +145,7 @@ namespace BTrees.Pages
                         destinationCandidate.Merge(sourceCandidate);
 #pragma warning restore CS8604 // Possible null reference argument.
                         mergeInfo.deprecatedPivotKey = sourceCandidate.PivotKey;
+                        destinationCandidate.RightSibling = sourceCandidate.RightSibling;
 
                         mergeInfo.merged = true;
 

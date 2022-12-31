@@ -144,6 +144,13 @@
             }
 
             Assert.Equal(2, tree.Degree);
+
+            for (var i = 0; i < this.pageSize * 3 - 1; ++i)
+            {
+                Assert.True(tree.TryDelete(i + 1), $"delete i: {i + 1}");
+            }
+
+            Assert.Equal(1, tree.Degree);
         }
     }
 }

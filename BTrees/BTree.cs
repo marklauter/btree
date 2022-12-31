@@ -22,25 +22,30 @@ namespace BTrees
             this.root = new LeafPage<TKey, TValue>(pageSize);
         }
 
-        public void Delete(TKey key)
+        public bool TryDelete(TKey key)
         {
-            if (this.root.TryDelete(key, out var mergeInfo))
+            var deleted = this.root.TryDelete(key, out var mergeInfo);
+            if (deleted)
             {
-                if (mergeInfo.merged && this.root is PivotPage<TKey, TValue> rootPage)
-                {
-#pragma warning disable CS8604 // Possible null reference argument. - it's not null
-                    if (this.root.RemoveKey(mergeInfo.deprecatedPivotKey, out _))
-                    {
-                        if (this.root.IsEmpty)
-                        {
-                            this.root = rootPage.children[0];
-                        }
-                    }
-#pragma warning restore CS8604 // Possible null reference argument.
-                }
-
                 --this.Count;
+                if (this.root is PivotPage<TKey, TValue> rootPage)
+                {
+                    if (mergeInfo.merged)
+                    {
+#pragma warning disable CS8604 // Possible null reference argument.
+                        _ = rootPage.RemoveKey(mergeInfo.deprecatedPivotKey, out _);
+#pragma warning restore CS8604 // Possible null reference argument.
+                    }
+
+                    if (rootPage.IsEmpty)
+                    {
+                        this.root = rootPage.children[0];
+                        --this.Degree;
+                    }
+                }
             }
+
+            return deleted;
         }
 
         public void Insert(TKey key, TValue value)
@@ -55,6 +60,7 @@ namespace BTrees
                     newSubPage,
                     newPivotKey);
 #pragma warning restore CS8604 // Possible null reference argument.
+
                 ++this.Degree;
             }
 

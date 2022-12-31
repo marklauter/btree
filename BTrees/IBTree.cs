@@ -11,7 +11,7 @@ namespace BTrees
 
         void Insert(TKey key, TValue value);
 
-        void Delete(TKey key);
+        bool TryDelete(TKey key);
 
         bool TryRead(TKey key, out TValue? value);
 
