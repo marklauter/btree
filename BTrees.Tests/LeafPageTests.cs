@@ -145,5 +145,212 @@ namespace BTrees.Tests
                 Assert.Equal(i + pivot, rightPage.Keys[i]);
             }
         }
+
+        [Fact]
+        public void SplitSetsNewPagePivotKey()
+        {
+            var leftPage = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < leftPage.Size; ++i)
+            {
+                var (newPage, _) = leftPage.Insert(i, i);
+                Assert.Null(newPage);
+            }
+
+            var (rightPage, pivot) = leftPage.Insert(this.pageSize, this.pageSize);
+            Assert.NotNull(rightPage);
+            Assert.Equal(5, pivot);
+            Assert.Equal(5, leftPage.Count);
+            Assert.Equal(6, rightPage.Count);
+
+            for (var i = 0; i < leftPage.Count; ++i)
+            {
+                Assert.Equal(i, leftPage.Keys[i]);
+            }
+
+            Assert.Equal(rightPage.MinKey, rightPage.PivotKey);
+        }
+
+        [Fact]
+        public void TryDeleteReturnsFalseWhenKeyNotFound()
+        {
+            var page = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = page.Insert(i, i);
+            }
+
+            var deleted = page.TryDelete(this.pageSize, out _);
+            Assert.False(deleted);
+        }
+
+        [Fact]
+        public void TryDeleteReturnsTrueWhenKeyFound()
+        {
+            var page = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = page.Insert(i, i);
+            }
+
+            var deleted = page.TryDelete(this.pageSize / 2, out _);
+            Assert.True(deleted);
+        }
+
+        [Fact]
+        public void TryDeleteRemovesKeyAndChild()
+        {
+            var page = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = page.Insert(i, i);
+            }
+
+            _ = page.TryDelete(this.pageSize / 2, out _);
+            Assert.DoesNotContain(this.pageSize / 2, page.Keys);
+            Assert.DoesNotContain(this.pageSize / 2, page.children);
+            Assert.Equal(page.Keys.Length, page.children.Length);
+        }
+
+        [Fact]
+        public void TryDeleteUpdatesCount()
+        {
+            var page = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = page.Insert(i, i);
+            }
+
+            _ = page.TryDelete(this.pageSize / 2, out _);
+            Assert.Equal(this.pageSize - 1, page.Count);
+        }
+
+        [Fact]
+        public void TryDeleteDoesNotMergeWhenCountGTKDiv2()
+        {
+            var page = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = page.Insert(i, i);
+            }
+
+            _ = page.TryDelete(this.pageSize / 2, out var mergeInfo);
+            Assert.False(mergeInfo.merged);
+        }
+
+        [Fact]
+        public void TryDeleteMergesWhenCountLTKDiv2()
+        {
+            var leftSibling = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < 3; ++i)
+            {
+                _ = leftSibling.Insert(i, i);
+            }
+
+            var page = new LeafPage<int, int>(this.pageSize, leftSibling);
+            for (var i = 4; i < 4 + 3; ++i)
+            {
+                _ = page.Insert(i, i);
+            }
+
+            var rightSibling = new LeafPage<int, int>(this.pageSize, page);
+            for (var i = 8; i < 8 + 3; ++i)
+            {
+                _ = rightSibling.Insert(i, i);
+            }
+
+            Assert.Equal(3, page.Count);
+
+            var deleted = page.TryDelete(page.MaxKey, out var mergeInfo);
+            Assert.True(deleted, "unexpected deleted value");
+            Assert.True(mergeInfo.merged, "unexpected merged value");
+        }
+
+        [Fact]
+        public void TryDeleteMergesLeftWhenCountLTKDiv2AndPreferredChoiceIsCurrentPage()
+        {
+            var leftSibling = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = leftSibling.Insert(i, i);
+            }
+
+            var (page, pivotKey) = leftSibling.Split();
+            Assert.True(page.PivotKey == pivotKey, "page pivot doesn't match");
+
+            var (rightSibling, rightSiblingPivotKey) = leftSibling.Split();
+            Assert.True(rightSibling.PivotKey == rightSiblingPivotKey, "right sibling pivot doesn't match");
+
+            _ = page.TryDelete(page.PivotKey, out var mergeInfo);
+            Assert.Equal(page.PivotKey, mergeInfo.deprecatedPivotKey);
+        }
+
+        [Fact]
+        public void TryDeleteMergesRightWhenCountLTKDiv2AndPreferredChoiceIsRightSibling()
+        {
+            var leftSibling = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = leftSibling.Insert(i, i);
+            }
+
+            var (page, pivotKey) = leftSibling.Split();
+            var (rightSibling, _) = page.Split();
+
+            var insertCount = page.Size - page.Count;
+            for (var i = 0; i < insertCount; ++i)
+            {
+                _ = page.Insert(pivotKey + 1, pivotKey + 1);
+            }
+
+            _ = rightSibling.TryDelete(rightSibling.PivotKey, out _);
+
+            var deleteCount = page.Count / 2;
+            for (var i = 0; i < deleteCount; ++i)
+            {
+                _ = page.TryDelete(pivotKey + 1, out _);
+            }
+
+            _ = page.TryDelete(page.PivotKey, out var mergeInfo);
+            Assert.True(mergeInfo.merged, "merged?");
+            Assert.Equal(rightSibling.PivotKey, mergeInfo.deprecatedPivotKey);
+        }
+
+        [Fact]
+        public void TryDeleteDoesntMergeWhenNoMergeCandidate()
+        {
+            var leftSibling = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = leftSibling.Insert(i, i);
+            }
+
+            var (page, pivotKey) = leftSibling.Split();
+            var (rightSibling, _) = page.Split();
+
+            var insertCount = page.Size - page.Count;
+            for (var i = 0; i < insertCount; ++i)
+            {
+                _ = page.Insert(pivotKey + 1, pivotKey + 1);
+            }
+
+            _ = rightSibling.TryDelete(rightSibling.PivotKey, out var rightSiblingMergeInfo);
+            Assert.False(rightSiblingMergeInfo.merged, "right sibling should not merge");
+        }
+
+        [Fact]
+        public void TryDeleteMergeInfoReturnsRightPivotKeyWhenLeftMostPage()
+        {
+            var leftPage = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize; ++i)
+            {
+                _ = leftPage.Insert(i, i);
+            }
+
+            var (rightPage, _) = leftPage.Split();
+
+            _ = leftPage.TryDelete(leftPage.MinKey, out var mergeInfo);
+            Assert.True(mergeInfo.merged, "merged shoud be true");
+            Assert.True(rightPage.PivotKey == mergeInfo.deprecatedPivotKey, "deprecated pivot key comes from right page");
+        }
     }
 }

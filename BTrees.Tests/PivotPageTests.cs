@@ -32,7 +32,7 @@ namespace BTrees.Tests
             }
 
             var originalCount = leftpage.Count;
-            var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage, rightpage.Keys[0]);
+            var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage, rightpage.MinKey);
             Assert.Equal(1, pivotPage.Count);
             _ = pivotPage.Insert(4, 5);
 
@@ -69,7 +69,7 @@ namespace BTrees.Tests
             Assert.NotNull(rightPivotPage);
             Assert.Equal(2, leftPivotPage.Count);
             Assert.Equal(3, rightPivotPage.Count);
-            Assert.Equal(newPivotKey, rightPivotPage.Keys[0]);
+            Assert.Equal(newPivotKey, rightPivotPage.MinKey);
         }
     }
 }

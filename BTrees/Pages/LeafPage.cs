@@ -16,7 +16,7 @@ namespace BTrees.Pages
             this.children = new TValue[size];
         }
 
-        private LeafPage(
+        internal LeafPage(
             int size,
             Page<TKey, TValue> leftSibling)
             : base(
@@ -96,7 +96,6 @@ namespace BTrees.Pages
             var keys = new Span<TKey>(this.Keys);
             var children = new Span<TValue>(this.children);
             var newPage = new LeafPage<TKey, TValue>(this.Size, this);
-            this.RightSibling = newPage;
             var newKeys = new Span<TKey>(newPage.Keys);
             var newChildren = new Span<TValue>(newPage.children);
 
@@ -109,10 +108,11 @@ namespace BTrees.Pages
                 ++j;
             }
 
+            newPage.PivotKey = newKeys[0];
             newPage.Count = count - newPivotIndex;
             this.Count = newPivotIndex;
 
-            return (newPage, newKeys[0]);
+            return (newPage, newPage.PivotKey);
         }
 
         public override bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo)

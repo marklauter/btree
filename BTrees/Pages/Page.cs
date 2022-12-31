@@ -13,8 +13,11 @@ namespace BTrees.Pages
         public bool IsUnderFlow => this.Count < this.Size / 2;
         public bool IsOverflow => this.Count == this.Size;
         public Page<TKey, TValue>? LeftSibling { get; }
-        public Page<TKey, TValue>? RightSibling { get; protected set; }
+        public Page<TKey, TValue>? RightSibling { get; private set; }
         public int Size { get; }
+        public TKey MinKey => this.Count != 0 ? this.Keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
+        public TKey MaxKey => this.Count != 0 ? this.Keys[this.Count - 1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
+        public TKey? PivotKey { get; protected set; }
 
         #region CTOR
         public Page(int size)
@@ -29,15 +32,13 @@ namespace BTrees.Pages
             : this(size)
         {
             this.LeftSibling = leftSibling ?? throw new ArgumentNullException(nameof(leftSibling));
+            leftSibling.RightSibling = this;
         }
         #endregion
 
         protected abstract void ShiftLeft(int index);
         protected abstract void ShiftRight(int index);
 
-        /// <summary>
-        /// Merge source page into current page
-        /// </summary>
         internal abstract void Merge(Page<TKey, TValue> sourcePage);
         internal abstract Page<TKey, TValue> SelectSubtree(TKey key);
         internal abstract (Page<TKey, TValue> newPage, TKey newPivotKey) Split();
@@ -94,39 +95,57 @@ namespace BTrees.Pages
                 return false;
             }
 
-            this.ShiftLeft(index);
+            if (this.Count > 1)
+            {
+                this.ShiftLeft(index);
+            }
+
             --this.Count;
 
-            if (this.IsEmpty)
+            if (this.IsEmpty && this.LeftSibling is not null)
             {
-                mergeInfo.deprecatedPivotKey = this.Keys[0];
+                mergeInfo.deprecatedPivotKey = this.PivotKey;
                 mergeInfo.merged = true;
                 return true;
             }
 
             if (this.IsUnderFlow)
             {
-
-                var leftSiblingCount = this.LeftSibling is null
-                    ? this.Size
-                    : this.LeftSibling.Count;
-
                 var rightSiblingCount = this.RightSibling is null
                     ? this.Size
                     : this.RightSibling.Count;
 
-                var mergeCandidate = leftSiblingCount < rightSiblingCount
-                    ? this.LeftSibling
-                    : this.RightSibling;
+                // Source is tuple.Item1 and destination is tuple.Item2.
+                // Array is ordered by preferred merge candidates based on smallest required mem copy during the merge operation.
+                var candidates = this.Count > rightSiblingCount
+                    ? new Tuple<Page<TKey, TValue>?, Page<TKey, TValue>?>[]
+                    {
+                        new (this.RightSibling, this),
+                        new (this, this.LeftSibling)
+                    }
+                    : new Tuple<Page<TKey, TValue>?, Page<TKey, TValue>?>[]
+                    {
+                        new (this, this.LeftSibling),
+                        new (this.RightSibling, this)
+                    };
 
-                if (this.CanMerge(mergeCandidate))
+                for (var i = 0; i < 2; ++i)
                 {
-                    mergeInfo.deprecatedPivotKey = this.Keys[0];
-                    mergeInfo.merged = true;
+                    var sourceCandidate = candidates[i].Item1;
+                    var destinationCandidate = candidates[i].Item2;
 
-#pragma warning disable CS8602 // Dereference of a possibly null reference. - CanMerge would return false if mergeCandiate is was null
-                    mergeCandidate.Merge(this);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+                    if (destinationCandidate is not null
+                        && destinationCandidate.CanMerge(sourceCandidate))
+                    {
+#pragma warning disable CS8604 // Possible null reference argument. - CanMerge() performs the null check
+                        destinationCandidate.Merge(sourceCandidate);
+#pragma warning restore CS8604 // Possible null reference argument.
+                        mergeInfo.deprecatedPivotKey = sourceCandidate.PivotKey;
+
+                        mergeInfo.merged = true;
+
+                        return true;
+                    }
                 }
             }
 
