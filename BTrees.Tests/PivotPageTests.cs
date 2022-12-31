@@ -1,4 +1,6 @@
-﻿namespace BTrees.Tests
+﻿using BTrees.Pages;
+
+namespace BTrees.Tests
 {
     public class PivotPageTests
     {
@@ -30,12 +32,44 @@
             }
 
             var originalCount = leftpage.Count;
-            var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage);
+            var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage, rightpage.MinKey);
             Assert.Equal(1, pivotPage.Count);
             _ = pivotPage.Insert(4, 5);
 
             Assert.Equal(originalCount, leftpage.Count - 1);
             Assert.Equal(originalCount, rightpage.Count);
+        }
+
+        [Fact]
+        public void PagesSplitOnInsertsCorrectly()
+        {
+            var pageSize = 4;
+            var leftLeafPage = new LeafPage<int, int>(pageSize);
+            var index = 0;
+            for (var i = 0; i < pageSize; ++i)
+            {
+                var (newPage, _) = leftLeafPage.Insert(index, index);
+                ++index;
+                Assert.Null(newPage);
+            }
+
+            var (rightLeafPage, newLeafPivotKey) = leftLeafPage.Insert(index, index);
+            ++index;
+            Assert.NotNull(rightLeafPage);
+
+            var leftPivotPage = new PivotPage<int, int>(pageSize, leftLeafPage, rightLeafPage, newLeafPivotKey);
+            for (var i = 0; i < 7; ++i)
+            {
+                var (newPage, _) = leftPivotPage.Insert(index, index);
+                ++index;
+                Assert.Null(newPage);
+            }
+
+            var (rightPivotPage, newPivotKey) = leftPivotPage.Insert(index, index);
+            Assert.NotNull(rightPivotPage);
+            Assert.Equal(2, leftPivotPage.Count);
+            Assert.Equal(3, rightPivotPage.Count);
+            Assert.Equal(newPivotKey, rightPivotPage.MinKey);
         }
     }
 }

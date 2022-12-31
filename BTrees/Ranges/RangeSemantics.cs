@@ -1,4 +1,4 @@
-﻿namespace BTrees
+﻿namespace BTrees.Ranges
 {
     public enum RangeSemantics
     {
