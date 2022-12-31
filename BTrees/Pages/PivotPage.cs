@@ -102,6 +102,10 @@ namespace BTrees.Pages
             {
                 index = ~index;
             }
+            else
+            {
+                ++index;
+            }
 
             return this.children[index];
         }
