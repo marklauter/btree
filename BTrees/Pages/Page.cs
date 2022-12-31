@@ -164,7 +164,7 @@ namespace BTrees.Pages
         /// <summary>
         /// Merge left on underflow.
         /// </summary>
-        /// <returns>True if merge was required.</returns>
+        /// <returns>True if delete was successful.</returns>
         public abstract bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo);
 
         public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
