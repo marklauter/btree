@@ -88,6 +88,7 @@ namespace BTrees.Pages
         {
             mergeInfo.merged = false;
             mergeInfo.deprecatedPivotKey = default;
+
             if (this.IsEmpty)
             {
                 return false;
@@ -104,7 +105,10 @@ namespace BTrees.Pages
                 this.ShiftLeft(index);
             }
 
-            --this.Count;
+            if (this.Count > 0)
+            {
+                --this.Count;
+            }
 
             if (this.IsEmpty && this.LeftSibling is not null)
             {
@@ -121,7 +125,7 @@ namespace BTrees.Pages
 
                 // Source is tuple.Item1 and destination is tuple.Item2.
                 // Array is ordered by preferred merge candidates based on smallest required mem copy during the merge operation.
-                var candidates = this.Count > rightSiblingCount
+                var candidates = rightSiblingCount < this.Count
                     ? new Tuple<Page<TKey, TValue>?, Page<TKey, TValue>?>[]
                     {
                         new (this.RightSibling, this),
