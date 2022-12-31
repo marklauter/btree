@@ -98,14 +98,9 @@ namespace BTrees.Pages
         internal override Page<TKey, TValue> SelectSubtree(TKey key)
         {
             var index = this.IndexOfKey(key);
-            if (index < 0)
-            {
-                index = ~index;
-            }
-            else
-            {
-                ++index;
-            }
+            index = index < 0
+                ? ~index
+                : index + 1;
 
             return this.children[index];
         }
