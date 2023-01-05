@@ -1,5 +1,5 @@
-﻿using BTrees.Pages;
-using BTrees.Ranges;
+﻿using BTrees.Expressions;
+using BTrees.Pages;
 using System.Diagnostics;
 
 namespace BTrees
@@ -73,17 +73,9 @@ namespace BTrees
         }
 
         // todo: add unit tests
-        public IEnumerable<TValue> Read(OpenRange<TKey> range)
+        public IEnumerable<TValue> Read(Expression<TKey> expression)
         {
             // todo: this can use the leaf page's right sibling
-            throw new NotImplementedException();
-        }
-
-        // todo: add unit tests
-        public IEnumerable<TValue> Read(ClosedRange<TKey> range)
-        {
-            // todo: this can use the leaf page's right sibling
-            // todo: if we identify the left and right most pages then we can pre-load first, last and all pages between that are involved in the range scan
             throw new NotImplementedException();
         }
     }

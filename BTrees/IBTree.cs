@@ -1,4 +1,4 @@
-﻿using BTrees.Ranges;
+﻿using BTrees.Expressions;
 
 namespace BTrees
 {
@@ -15,8 +15,6 @@ namespace BTrees
 
         bool TryRead(TKey key, out TValue? value);
 
-        IEnumerable<TValue> Read(OpenRange<TKey> range);
-
-        IEnumerable<TValue> Read(ClosedRange<TKey> range);
+        IEnumerable<TValue> Read(Expression<TKey> expression);
     }
 }

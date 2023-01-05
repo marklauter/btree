@@ -1,11 +1,12 @@
-﻿namespace BTrees
+﻿namespace BTrees.Expressions
 {
-    public enum BooleanOperator
+    public enum RelationalOperator
     {
         GreaterThan,
         GreaterThanOrEqual,
         LessThan,
         LessThanOrEqual,
         Equal,
+        NotEqual
     }
 }
