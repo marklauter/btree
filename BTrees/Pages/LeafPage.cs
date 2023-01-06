@@ -94,13 +94,14 @@ namespace BTrees.Pages
 
         internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
-            var count = this.Count;
+            var newPage = new LeafPage<TKey, TValue>(this.Size, this);
+
             var keys = new Span<TKey>(this.Keys);
             var children = new Span<TValue>(this.children);
-            var newPage = new LeafPage<TKey, TValue>(this.Size, this);
             var newKeys = new Span<TKey>(newPage.Keys);
             var newChildren = new Span<TValue>(newPage.children);
 
+            var count = this.Count;
             var newPivotIndex = count / 2;
             var j = 0;
             for (var i = newPivotIndex; i < count; ++i)
@@ -130,15 +131,16 @@ namespace BTrees.Pages
                 return (null, default);
             }
 
-            var (newPage, newPivotKey) = this.Split();
-            if (key.CompareTo(newPivotKey) <= 0)
-            {
-                this.InsertInternal(key, value);
-            }
-            else
-            {
-                ((LeafPage<TKey, TValue>)newPage).InsertInternal(key, value);
-            }
+            var rightOnly = false; //key.CompareTo(this.MaxKey) > 0;
+            var (newPage, newPivotKey) = rightOnly
+                ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
+                : this.Split();
+
+            var destinationPage = rightOnly || key.CompareTo(newPivotKey) > 0
+                ? ((LeafPage<TKey, TValue>)newPage)
+                : this;
+
+            destinationPage.InsertInternal(key, value);
 
             return (newPage, newPivotKey);
         }

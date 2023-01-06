@@ -8,7 +8,7 @@
         public void SplitTest()
         {
             var tree = new BTree<int, int>(this.pageSize);
-            for (var i = 0; i < this.pageSize * 10; ++i)
+            for (var i = this.pageSize * 10; i > 0; --i)
             {
                 tree.Insert(i + 1, i + 1);
             }

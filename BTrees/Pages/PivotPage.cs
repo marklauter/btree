@@ -107,13 +107,13 @@ namespace BTrees.Pages
 
         internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
-            var count = this.Count;
+            var newPage = new PivotPage<TKey, TValue>(this.Size, this);
             var keys = new Span<TKey>(this.Keys);
             var children = new Span<Page<TKey, TValue>>(this.children);
-            var newPage = new PivotPage<TKey, TValue>(this.Size, this);
             var newKeys = new Span<TKey>(newPage.Keys);
             var newChildren = new Span<Page<TKey, TValue>>(newPage.children);
 
+            var count = this.Count;
             var newPivotIndex = count / 2;
             var j = 0;
             for (var i = newPivotIndex; i < count; ++i)
@@ -162,19 +162,23 @@ namespace BTrees.Pages
                 return (null, default);
             }
 
-#pragma warning disable CS8604 // Possible null reference argument. - stfu, it's not null
+#pragma warning disable CS8604 // Possible null reference argument. - it's not null
             if (!this.IsOverflow)
             {
                 this.InsertInternal(newSubTreePivotKey, newSubTree);
                 return (null, default);
             }
 
-            var (newPage, newPivotKey) = this.Split();
-            var pivotPage = key.CompareTo(newPivotKey) <= 0
-                ? this
-                : (PivotPage<TKey, TValue>)newPage;
+            var rightOnly = false; // key.CompareTo(this.MaxKey) > 0;
+            var (newPage, newPivotKey) = rightOnly
+                ? (new PivotPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
+                : this.Split();
 
-            pivotPage.InsertInternal(newSubTreePivotKey, newSubTree);
+            var destinationPage = rightOnly || key.CompareTo(newPivotKey) > 0
+                ? (PivotPage<TKey, TValue>)newPage
+                : this;
+
+            destinationPage.InsertInternal(newSubTreePivotKey, newSubTree);
 #pragma warning restore CS8604 // Possible null reference argument.
 
             return (newPage, newPivotKey);
