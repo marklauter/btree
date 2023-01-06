@@ -7,14 +7,29 @@
         [Fact]
         public void SplitTest()
         {
+            var random = new Random(10);
             var tree = new BTree<int, int>(this.pageSize);
-            for (var i = this.pageSize * 10; i > 0; --i)
+            for (var i = 0; i < this.pageSize * 10; ++i)
+            {
+                var kv = random.Next(this.pageSize * 10);
+                tree.Insert(kv, kv);
+            }
+
+            Assert.Equal(this.pageSize * 10, tree.Count);
+            Assert.Equal(3, tree.Degree);
+        }
+
+        [Fact]
+        public void RightOnlyInsertTest()
+        {
+            var tree = new BTree<int, int>(this.pageSize);
+            for (var i = 0; i < this.pageSize * 10; ++i)
             {
                 tree.Insert(i + 1, i + 1);
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
-            Assert.Equal(4, tree.Degree);
+            Assert.Equal(3, tree.Degree);
         }
 
         public static int BinarySearch(int[] array, int target)

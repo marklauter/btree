@@ -109,9 +109,9 @@ namespace BTrees.Pages
         {
             var newPage = new PivotPage<TKey, TValue>(this.Size, this);
             var keys = new Span<TKey>(this.Keys);
-            var children = new Span<Page<TKey, TValue>>(this.children);
+            var children = new Span<Page<TKey, TValue>?>(this.children);
             var newKeys = new Span<TKey>(newPage.Keys);
-            var newChildren = new Span<Page<TKey, TValue>>(newPage.children);
+            var newChildren = new Span<Page<TKey, TValue>?>(newPage.children);
 
             var count = this.Count;
             var newPivotIndex = count / 2;
@@ -124,6 +124,11 @@ namespace BTrees.Pages
             }
 
             newChildren[j] = children[count];
+
+            for (var i = count; i > newPivotIndex; --i)
+            {
+                children[i] = null;
+            }
 
             newPage.PivotKey = newKeys[0];
             newPage.Count = count - newPivotIndex;
@@ -145,9 +150,7 @@ namespace BTrees.Pages
 #pragma warning disable CS8604 // Possible null reference argument.
                 _ = this.RemoveKey(subTreeMergeInfo.deprecatedPivotKey, out mergeInfo);
 #pragma warning restore CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 this.children[this.Count + 1] = null;
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
             }
 
             return deleted;
@@ -169,12 +172,9 @@ namespace BTrees.Pages
                 return (null, default);
             }
 
-            var rightOnly = false; // key.CompareTo(this.MaxKey) > 0;
-            var (newPage, newPivotKey) = rightOnly
-                ? (new PivotPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
-                : this.Split();
+            var (newPage, newPivotKey) = this.Split();
 
-            var destinationPage = rightOnly || key.CompareTo(newPivotKey) > 0
+            var destinationPage = key.CompareTo(newPivotKey) > 0
                 ? (PivotPage<TKey, TValue>)newPage
                 : this;
 

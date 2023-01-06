@@ -97,9 +97,9 @@ namespace BTrees.Pages
             var newPage = new LeafPage<TKey, TValue>(this.Size, this);
 
             var keys = new Span<TKey>(this.Keys);
-            var children = new Span<TValue>(this.children);
+            var children = new Span<TValue?>(this.children);
             var newKeys = new Span<TKey>(newPage.Keys);
-            var newChildren = new Span<TValue>(newPage.children);
+            var newChildren = new Span<TValue?>(newPage.children);
 
             var count = this.Count;
             var newPivotIndex = count / 2;
@@ -107,7 +107,11 @@ namespace BTrees.Pages
             for (var i = newPivotIndex; i < count; ++i)
             {
                 newKeys[j] = keys[i];
+#pragma warning disable CS8601 // Possible null reference assignment.
+                keys[i] = default;
+#pragma warning restore CS8601 // Possible null reference assignment.
                 newChildren[j] = children[i];
+                children[i] = default;
                 ++j;
             }
 
@@ -131,12 +135,12 @@ namespace BTrees.Pages
                 return (null, default);
             }
 
-            var rightOnly = false; //key.CompareTo(this.MaxKey) > 0;
+            var rightOnly = key.CompareTo(this.MaxKey) > 0;
             var (newPage, newPivotKey) = rightOnly
                 ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
                 : this.Split();
 
-            var destinationPage = rightOnly || key.CompareTo(newPivotKey) > 0
+            var destinationPage = rightOnly || key.CompareTo(newPivotKey) >= 0
                 ? ((LeafPage<TKey, TValue>)newPage)
                 : this;
 
