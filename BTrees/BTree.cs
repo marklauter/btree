@@ -39,7 +39,7 @@ namespace BTrees
 
                     if (rootPage.IsEmpty)
                     {
-                        this.root = rootPage.children[0];
+                        this.root = rootPage.subtrees[0];
                         --this.Degree;
                     }
                 }

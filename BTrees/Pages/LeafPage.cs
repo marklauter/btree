@@ -7,13 +7,13 @@ namespace BTrees.Pages
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        internal readonly TValue[] children;
+        internal readonly TValue[] values;
 
         #region CTOR
         public LeafPage(int size)
             : base(size)
         {
-            this.children = new TValue[size];
+            this.values = new TValue[size];
         }
 
         internal LeafPage(
@@ -23,7 +23,7 @@ namespace BTrees.Pages
                   size,
                   leftSibling)
         {
-            this.children = new TValue[size];
+            this.values = new TValue[size];
         }
         #endregion
 
@@ -42,7 +42,7 @@ namespace BTrees.Pages
             }
 
             this.Keys[index] = key;
-            this.children[index] = value;
+            this.values[index] = value;
             ++this.Count;
         }
 
@@ -51,7 +51,7 @@ namespace BTrees.Pages
             for (var i = index; i < this.Count - 1; ++i)
             {
                 this.Keys[i] = this.Keys[i + 1];
-                this.children[i] = this.children[i + 1];
+                this.values[i] = this.values[i + 1];
             }
         }
 
@@ -60,7 +60,7 @@ namespace BTrees.Pages
             for (var i = this.Count - 1; i >= index; --i)
             {
                 this.Keys[i + 1] = this.Keys[i];
-                this.children[i + 1] = this.children[i];
+                this.values[i + 1] = this.values[i];
             }
         }
 
@@ -70,10 +70,10 @@ namespace BTrees.Pages
             var endIndex = sourcePage.Count + startIndex;
 
             var keys = new Span<TKey>(this.Keys);
-            var children = new Span<TValue>(this.children);
+            var children = new Span<TValue>(this.values);
 
             var sourceKeys = new Span<TKey>(sourcePage.Keys);
-            var sourceChildren = new Span<TValue>(((LeafPage<TKey, TValue>)sourcePage).children);
+            var sourceChildren = new Span<TValue>(((LeafPage<TKey, TValue>)sourcePage).values);
 
             var j = 0;
             for (var i = startIndex; i < endIndex; ++i)
@@ -97,9 +97,9 @@ namespace BTrees.Pages
             var newPage = new LeafPage<TKey, TValue>(this.Size, this);
 
             var keys = new Span<TKey>(this.Keys);
-            var children = new Span<TValue?>(this.children);
+            var children = new Span<TValue?>(this.values);
             var newKeys = new Span<TKey>(newPage.Keys);
-            var newChildren = new Span<TValue?>(newPage.children);
+            var newChildren = new Span<TValue?>(newPage.values);
 
             var count = this.Count;
             var newPivotIndex = count / 2;
@@ -158,7 +158,7 @@ namespace BTrees.Pages
                 return false;
             }
 
-            value = this.children[index];
+            value = this.values[index];
             return true;
         }
     }

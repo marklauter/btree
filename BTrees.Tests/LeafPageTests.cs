@@ -129,7 +129,7 @@ namespace BTrees.Tests
                 Assert.Null(newPage);
             }
 
-            var (rightPage, pivot) = leftPage.Insert(this.pageSize, this.pageSize);
+            var (rightPage, pivot) = leftPage.Insert(this.pageSize / 2, this.pageSize / 2);
             Assert.NotNull(rightPage);
             Assert.Equal(5, pivot);
             Assert.Equal(5, leftPage.Count);
@@ -140,10 +140,12 @@ namespace BTrees.Tests
                 Assert.Equal(i, leftPage.Keys[i]);
             }
 
-            for (var i = 0; i < rightPage.Count; ++i)
-            {
-                Assert.Equal(i + pivot, rightPage.Keys[i]);
-            }
+            Assert.Equal(5, rightPage.Keys[0]);
+            Assert.Equal(5, rightPage.Keys[1]);
+            Assert.Equal(6, rightPage.Keys[2]);
+            Assert.Equal(7, rightPage.Keys[3]);
+            Assert.Equal(8, rightPage.Keys[4]);
+            Assert.Equal(9, rightPage.Keys[5]);
         }
 
         [Fact]
@@ -156,11 +158,35 @@ namespace BTrees.Tests
                 Assert.Null(newPage);
             }
 
-            var (rightPage, pivot) = leftPage.Insert(this.pageSize, this.pageSize);
+            var (rightPage, pivot) = leftPage.Insert(this.pageSize / 2, this.pageSize / 2);
             Assert.NotNull(rightPage);
             Assert.Equal(5, pivot);
             Assert.Equal(5, leftPage.Count);
             Assert.Equal(6, rightPage.Count);
+
+            for (var i = 0; i < leftPage.Count; ++i)
+            {
+                Assert.Equal(i, leftPage.Keys[i]);
+            }
+
+            Assert.Equal(rightPage.MinKey, rightPage.PivotKey);
+        }
+
+        [Fact]
+        public void SplitSetsNewPagePivotKeyWithRightOnlyInsert()
+        {
+            var leftPage = new LeafPage<int, int>(this.pageSize);
+            for (var i = 0; i < leftPage.Size; ++i)
+            {
+                var (newPage, _) = leftPage.Insert(i, i);
+                Assert.Null(newPage);
+            }
+
+            var (rightPage, pivot) = leftPage.Insert(this.pageSize, this.pageSize);
+            Assert.NotNull(rightPage);
+            Assert.Equal(10, pivot);
+            Assert.Equal(10, leftPage.Count);
+            Assert.Equal(1, rightPage.Count);
 
             for (var i = 0; i < leftPage.Count; ++i)
             {
@@ -207,8 +233,8 @@ namespace BTrees.Tests
 
             _ = page.TryDelete(this.pageSize / 2, out _);
             Assert.DoesNotContain(this.pageSize / 2, page.Keys);
-            Assert.DoesNotContain(this.pageSize / 2, page.children);
-            Assert.Equal(page.Keys.Length, page.children.Length);
+            Assert.DoesNotContain(this.pageSize / 2, page.values);
+            Assert.Equal(page.Keys.Length, page.values.Length);
         }
 
         [Fact]
