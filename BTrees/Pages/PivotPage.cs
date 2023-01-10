@@ -38,16 +38,16 @@ namespace BTrees.Pages
         }
         #endregion
 
-        private void InsertInternal(TKey key, Page<TKey, TValue> value)
+        private void WriteInternal(TKey key, Page<TKey, TValue> value)
         {
             var index = this.IndexOfKey(key);
-            index = index == 0
-                ? index
-                : index > 0
-                    ? index + 1
+            var shiftRequired = index < 0;
+            index = index > 0
+                    ? index
                     : ~index;
 
-            if (index != this.Count)
+            shiftRequired = index != this.Count && shiftRequired;
+            if (shiftRequired)
             {
                 this.ShiftRight(index);
             }
@@ -148,26 +148,29 @@ namespace BTrees.Pages
 #pragma warning disable CS8604 // Possible null reference argument.
                 _ = this.RemoveKey(subTreeMergeInfo.deprecatedPivotKey, out mergeInfo);
 #pragma warning restore CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 this.subtrees[this.Count + 1] = null;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
             }
 
             return deleted;
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) Write(TKey key, TValue value)
         {
             var page = this.SelectSubtree(key);
-            var (newSubTree, newSubTreePivotKey) = page.Insert(key, value);
+            var (newSubTree, newSubTreePivotKey, result) = page.Write(key, value);
             if (newSubTree is null)
             {
-                return (null, default);
+                return (null, default, result);
             }
 
-#pragma warning disable CS8604 // Possible null reference argument. - it's not null
             if (!this.IsOverflow)
             {
-                this.InsertInternal(newSubTreePivotKey, newSubTree);
-                return (null, default);
+#pragma warning disable CS8604 // Possible null reference argument.
+                this.WriteInternal(newSubTreePivotKey, newSubTree);
+#pragma warning restore CS8604 // Possible null reference argument.
+                return (null, default, result);
             }
 
             var (newPage, newPivotKey) = this.Split();
@@ -176,10 +179,11 @@ namespace BTrees.Pages
                 ? (PivotPage<TKey, TValue>)newPage
                 : this;
 
-            destinationPage.InsertInternal(newSubTreePivotKey, newSubTree);
+#pragma warning disable CS8604 // Possible null reference argument.
+            destinationPage.WriteInternal(newSubTreePivotKey, newSubTree);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-            return (newPage, newPivotKey);
+            return (newPage, newPivotKey, result);
         }
 
         public override bool TryRead(TKey key, out TValue? value)

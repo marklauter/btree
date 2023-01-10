@@ -48,13 +48,12 @@ namespace BTrees
             return deleted;
         }
 
-        public bool TryInsert(TKey key, TValue value)
+        public void Write(TKey key, TValue value)
         {
-            // todo: handle duplicate keys
-            var (newSubPage, newPivotKey) = this.root.Insert(key, value);
+            var (newSubPage, newPivotKey, writeResult) = this.root.Write(key, value);
             if (newSubPage is not null)
             {
-#pragma warning disable CS8604 // Possible null reference argument. - it's not null
+#pragma warning disable CS8604 // Possible null reference argument.
                 this.root = new PivotPage<TKey, TValue>(
                     this.pageSize,
                     this.root,
@@ -65,7 +64,10 @@ namespace BTrees
                 ++this.Height;
             }
 
-            ++this.Count;
+            if (writeResult == WriteResult.Inserted)
+            {
+                ++this.Count;
+            }
         }
 
         public bool TryRead(TKey key, out TValue? value)

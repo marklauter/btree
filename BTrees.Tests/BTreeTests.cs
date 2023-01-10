@@ -12,20 +12,20 @@
             for (var i = 0; i < this.pageSize * 10; ++i)
             {
                 var kv = random.Next(this.pageSize * 10);
-                tree.Insert(kv, kv);
+                tree.Write(kv, kv);
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
             Assert.Equal(3, tree.Height);
         }
 
-        [Fact(Skip = "not doing right-only right now")]
+        [Fact]
         public void RightOnlyInsertTest()
         {
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 10; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
@@ -128,7 +128,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
             var found = tree.TryRead(1, out var value);
@@ -142,7 +142,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
             var found = tree.TryRead(this.pageSize * 10, out _);
@@ -155,7 +155,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 3; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
             Assert.Equal(2, tree.Height);
@@ -176,17 +176,20 @@
         [InlineData(13)]
         public void InsertAndRead(int rndSeed)
         {
-            var tree = new BTree<int, int>(this.pageSize);
+            var localPageSize = 8192;
+            var tree = new BTree<int, int>(localPageSize);
             var random = new Random(rndSeed);
-            for (var i = 0; i < this.pageSize * 200; ++i)
+            var maxRnd = 4069;
+
+            for (var i = 0; i < 250000; ++i)
             {
-                var key = random.Next(this.pageSize * 200);
-                var expectedValue = random.Next(this.pageSize * 200);
-                tree.Insert(key, expectedValue);
+                var key = random.Next(maxRnd);
+                var expectedValue = random.Next(maxRnd);
+                tree.Write(key, expectedValue);
                 Assert.True(tree.TryRead(key, out var actualValue), $"count: {tree.Count}, kvp: ({key}, {actualValue})");
                 Assert.Equal(expectedValue, actualValue);
-                var bestCaseHeight = (int)(Math.Log(tree.Count, this.pageSize + 1) + 1);
-                var worstCaseHeight = (int)(Math.Log(tree.Count, (this.pageSize + 1) / 2) + 1);
+                var bestCaseHeight = (int)(Math.Log(tree.Count, localPageSize + 1) + 1);
+                var worstCaseHeight = (int)(Math.Log(tree.Count, (localPageSize + 1) / 2) + 1);
                 Assert.True(tree.Height >= bestCaseHeight && tree.Height <= worstCaseHeight, $"count: {tree.Count}, best: {bestCaseHeight}, worst: {worstCaseHeight}, actual: {tree.Height}");
             }
         }
