@@ -48,8 +48,9 @@ namespace BTrees
             return deleted;
         }
 
-        public void Insert(TKey key, TValue value)
+        public bool TryInsert(TKey key, TValue value)
         {
+            // todo: handle duplicate keys
             var (newSubPage, newPivotKey) = this.root.Insert(key, value);
             if (newSubPage is not null)
             {
@@ -84,6 +85,11 @@ namespace BTrees
         {
             // todo: this can use the leaf page's right sibling
             // todo: if we identify the left and right most pages then we can pre-load first, last and all pages between that are involved in the range scan
+            throw new NotImplementedException();
+        }
+
+        public bool TryUpdate(TKey key, TValue value)
+        {
             throw new NotImplementedException();
         }
     }
