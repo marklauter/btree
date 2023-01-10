@@ -29,43 +29,6 @@ namespace BTrees.Pages
         }
         #endregion
 
-        private WriteResult WriteInternal(TKey key, TValue value)
-        {
-            if (this.IsEmpty)
-            {
-                this.Keys[0] = key;
-                this.values[0] = value;
-                ++this.Count;
-
-                return WriteResult.Inserted;
-            }
-
-            var index = this.IndexOfKey(key);
-            var keyNotFound = index < 0;
-
-            index = keyNotFound
-                    ? ~index
-                    : index;
-
-            var writeResult = keyNotFound
-                ? WriteResult.Inserted
-                : WriteResult.Updated;
-
-            if (keyNotFound && index != this.Count)
-            {
-                this.ShiftRight(index);
-            }
-
-            this.Keys[index] = key;
-            this.values[index] = value;
-            if (writeResult == WriteResult.Inserted)
-            {
-                ++this.Count;
-            }
-
-            return writeResult;
-        }
-
         protected override void ShiftLeft(int index)
         {
             for (var i = index; i < this.Count - 1; ++i)
@@ -150,16 +113,64 @@ namespace BTrees.Pages
                 return (null, default, this.WriteInternal(key, value));
             }
 
-            var rightOnly = key.CompareTo(this.MaxKey) > 0;
-            var (newPage, newPivotKey) = rightOnly
-                ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
-                : this.Split();
+            var count = this.Count;
+            var index = this.IndexOfKey(key);
+            var keyFound = index >= 0;
+            var rightOnly = ~index == count;
 
-            var destinationPage = rightOnly || key.CompareTo(newPivotKey) >= 0
-                ? ((LeafPage<TKey, TValue>)newPage)
-                : this;
+            var (newPage, newPivotKey) = keyFound
+                ? (null, default)
+                : rightOnly
+                    ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
+                    : this.Split();
 
+            var destinationPage = keyFound
+                ? this
+                : rightOnly || key.CompareTo(newPivotKey) >= 0
+                    ? ((LeafPage<TKey, TValue>?)newPage)
+                    : this;
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             return (newPage, newPivotKey, destinationPage.WriteInternal(key, value));
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        }
+
+        private WriteResult WriteInternal(TKey key, TValue value)
+        {
+            if (this.IsEmpty)
+            {
+                this.Keys[0] = key;
+                this.values[0] = value;
+                ++this.Count;
+
+                return WriteResult.Inserted;
+            }
+
+            var index = this.IndexOfKey(key);
+            var keyNotFound = index < 0;
+
+            index = keyNotFound
+                    ? ~index
+                    : index;
+
+            var writeResult = keyNotFound
+                ? WriteResult.Inserted
+                : WriteResult.Updated;
+
+            // todo: shift in-place will be replaced with page clone that skips a slot as part of copy-on-write updates
+            if (keyNotFound && index != this.Count)
+            {
+                this.ShiftRight(index);
+            }
+
+            this.Keys[index] = key;
+            this.values[index] = value;
+            if (writeResult == WriteResult.Inserted)
+            {
+                ++this.Count;
+            }
+
+            return writeResult;
         }
 
         public override bool TryRead(TKey key, out TValue? value)
