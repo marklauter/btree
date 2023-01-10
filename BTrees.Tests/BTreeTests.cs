@@ -16,10 +16,10 @@
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
-            Assert.Equal(3, tree.Degree);
+            Assert.Equal(3, tree.Height);
         }
 
-        [Fact]
+        [Fact(Skip = "not doing right-only right now")]
         public void RightOnlyInsertTest()
         {
             var tree = new BTree<int, int>(this.pageSize);
@@ -29,7 +29,7 @@
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
-            Assert.Equal(3, tree.Degree);
+            Assert.Equal(3, tree.Height);
         }
 
         public static int BinarySearch(int[] array, int target)
@@ -158,14 +158,37 @@
                 tree.Insert(i + 1, i + 1);
             }
 
-            Assert.Equal(2, tree.Degree);
+            Assert.Equal(2, tree.Height);
 
             for (var i = 0; i < this.pageSize * 3 - 1; ++i)
             {
                 Assert.True(tree.TryDelete(i + 1), $"delete i: {i + 1}");
             }
 
-            Assert.Equal(1, tree.Degree);
+            Assert.Equal(1, tree.Height);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(13)]
+        public void InsertAndRead(int rndSeed)
+        {
+            var tree = new BTree<int, int>(this.pageSize);
+            var random = new Random(rndSeed);
+            for (var i = 0; i < this.pageSize * 200; ++i)
+            {
+                var key = random.Next(this.pageSize * 200);
+                var expectedValue = random.Next(this.pageSize * 200);
+                tree.Insert(key, expectedValue);
+                Assert.True(tree.TryRead(key, out var actualValue), $"count: {tree.Count}, kvp: ({key}, {actualValue})");
+                Assert.Equal(expectedValue, actualValue);
+                var bestCaseHeight = (int)(Math.Log(tree.Count, this.pageSize + 1) + 1);
+                var worstCaseHeight = (int)(Math.Log(tree.Count, (this.pageSize + 1) / 2) + 1);
+                Assert.True(tree.Height >= bestCaseHeight && tree.Height <= worstCaseHeight, $"count: {tree.Count}, best: {bestCaseHeight}, worst: {worstCaseHeight}, actual: {tree.Height}");
+            }
         }
     }
 }

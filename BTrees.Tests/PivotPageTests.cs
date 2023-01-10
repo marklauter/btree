@@ -40,7 +40,7 @@ namespace BTrees.Tests
             Assert.Equal(originalCount, rightpage.Count);
         }
 
-        [Fact]
+        [Fact(Skip = "not using right-only at the moment")]
         public void PagesSplitOnInsertsCorrectly()
         {
             var pageSize = 4;

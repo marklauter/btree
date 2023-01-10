@@ -7,7 +7,7 @@ namespace BTrees
     {
         long Count { get; }
 
-        int Degree { get; }
+        int Height { get; }
 
         void Insert(TKey key, TValue value);
 

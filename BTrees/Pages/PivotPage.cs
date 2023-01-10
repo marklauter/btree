@@ -9,6 +9,8 @@ namespace BTrees.Pages
     {
         internal readonly Page<TKey, TValue>[] subtrees;
 
+        public override int Order => this.Size + 1;
+
         #region CTOR
         public PivotPage(int size)
             : base(size)
@@ -39,11 +41,11 @@ namespace BTrees.Pages
         private void InsertInternal(TKey key, Page<TKey, TValue> value)
         {
             var index = this.IndexOfKey(key);
-            index = index > 0
-                ? index + 1
-                : index < 0
-                    ? ~index
-                    : index;
+            index = index == 0
+                ? index
+                : index > 0
+                    ? index + 1
+                    : ~index;
 
             if (index != this.Count)
             {
@@ -107,18 +109,17 @@ namespace BTrees.Pages
 
         internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
-            var keys = new Span<TKey>(this.Keys);
-            var subtrees = new Span<Page<TKey, TValue>?>(this.subtrees);
-
             var newPage = new PivotPage<TKey, TValue>(this.Size, this);
             var newKeys = new Span<TKey>(newPage.Keys);
             var newSubtrees = new Span<Page<TKey, TValue>?>(newPage.subtrees);
 
+            var keys = new Span<TKey>(this.Keys);
+            var subtrees = new Span<Page<TKey, TValue>?>(this.subtrees);
+
             var count = this.Count;
             var newPivotIndex = count / 2;
-            var copyFromIndex = newPivotIndex + 1;
             var j = 0;
-            for (var i = copyFromIndex; i < count; ++i)
+            for (var i = newPivotIndex; i < count; ++i)
             {
                 newKeys[j] = keys[i];
                 newSubtrees[j] = subtrees[i];
@@ -127,14 +128,9 @@ namespace BTrees.Pages
 
             newSubtrees[j] = subtrees[count];
 
-            for (var i = count; i >= copyFromIndex; --i)
-            {
-                subtrees[i] = null;
-            }
-
             newPage.PivotKey = newKeys[0];
-            newPage.Count = count - copyFromIndex;
-            this.Count = copyFromIndex - 1;
+            newPage.Count = count - newPivotIndex;
+            this.Count = newPivotIndex;
 
             return (newPage, newPage.PivotKey);
         }

@@ -11,7 +11,7 @@ namespace BTrees
     {
         public long Count { get; private set; }
 
-        public int Degree { get; private set; } = 1;
+        public int Height { get; private set; } = 1;
 
         private readonly int pageSize;
         private Page<TKey, TValue> root;
@@ -40,7 +40,7 @@ namespace BTrees
                     if (rootPage.IsEmpty)
                     {
                         this.root = rootPage.subtrees[0];
-                        --this.Degree;
+                        --this.Height;
                     }
                 }
             }
@@ -61,7 +61,7 @@ namespace BTrees
                     newPivotKey);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-                ++this.Degree;
+                ++this.Height;
             }
 
             ++this.Count;

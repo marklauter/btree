@@ -18,6 +18,8 @@ namespace BTrees.Pages
         public TKey MinKey => this.Count != 0 ? this.Keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
         public TKey MaxKey => this.Count != 0 ? this.Keys[this.Count - 1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
         public TKey? PivotKey { get; protected set; }
+        public abstract int Order { get; }
+
 
         #region CTOR
         public Page(int size)

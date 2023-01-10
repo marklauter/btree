@@ -9,6 +9,8 @@ namespace BTrees.Pages
     {
         internal readonly TValue[] values;
 
+        public override int Order => this.Size;
+
         #region CTOR
         public LeafPage(int size)
             : base(size)
@@ -30,11 +32,11 @@ namespace BTrees.Pages
         private void InsertInternal(TKey key, TValue value)
         {
             var index = this.IndexOfKey(key);
-            index = index > 0
-                ? index + 1
-                : index < 0
-                    ? ~index
-                    : index;
+            index = index == 0
+                ? index
+                : index > 0
+                    ? index + 1
+                    : ~index;
 
             if (index != this.Count)
             {
@@ -95,11 +97,11 @@ namespace BTrees.Pages
         internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
             var newPage = new LeafPage<TKey, TValue>(this.Size, this);
+            var newKeys = new Span<TKey>(newPage.Keys);
+            var newChildren = new Span<TValue?>(newPage.values);
 
             var keys = new Span<TKey>(this.Keys);
             var children = new Span<TValue?>(this.values);
-            var newKeys = new Span<TKey>(newPage.Keys);
-            var newChildren = new Span<TValue?>(newPage.values);
 
             var count = this.Count;
             var newPivotIndex = count / 2;
@@ -107,11 +109,7 @@ namespace BTrees.Pages
             for (var i = newPivotIndex; i < count; ++i)
             {
                 newKeys[j] = keys[i];
-#pragma warning disable CS8601 // Possible null reference assignment.
-                keys[i] = default;
-#pragma warning restore CS8601 // Possible null reference assignment.
                 newChildren[j] = children[i];
-                children[i] = default;
                 ++j;
             }
 
@@ -135,14 +133,19 @@ namespace BTrees.Pages
                 return (null, default);
             }
 
-            var rightOnly = key.CompareTo(this.MaxKey) > 0;
-            var (newPage, newPivotKey) = rightOnly
-                ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
-                : this.Split();
+            //var rightOnly = key.CompareTo(this.MaxKey) > 0;
+            //var (newPage, newPivotKey) = rightOnly
+            //    ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
+            //    : this.Split();
 
-            var destinationPage = rightOnly || key.CompareTo(newPivotKey) >= 0
+            var (newPage, newPivotKey) = this.Split();
+            var destinationPage = key.CompareTo(newPivotKey) >= 0
                 ? ((LeafPage<TKey, TValue>)newPage)
                 : this;
+
+            //var destinationPage = rightOnly || key.CompareTo(newPivotKey) >= 0
+            //    ? ((LeafPage<TKey, TValue>)newPage)
+            //    : this;
 
             destinationPage.InsertInternal(key, value);
 
