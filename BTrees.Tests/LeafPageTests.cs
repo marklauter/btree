@@ -122,30 +122,26 @@ namespace BTrees.Tests
         [Fact]
         public void SplitTest()
         {
+            var maxKey = this.pageSize * 2;
             var leftPage = new LeafPage<int, int>(this.pageSize);
-            for (var i = 0; i < leftPage.Size; ++i)
+            for (var i = 0; i < maxKey; i += 2)
             {
-                var (newPage, _, _) = leftPage.Write(i, i);
+                var (newPage, _, writeResultI) = leftPage.Write(i, i);
+                Assert.Equal(WriteResult.Inserted, writeResultI);
                 Assert.Null(newPage);
             }
 
-            var (rightPage, pivot, _) = leftPage.Write(this.pageSize / 2, this.pageSize / 2);
+            var (rightPage, pivot, writeResultO) = leftPage.Write(maxKey / 2 - 1, maxKey / 2 - 1);
+            Assert.Equal(WriteResult.Inserted, writeResultO);
             Assert.NotNull(rightPage);
-            Assert.Equal(5, pivot);
-            Assert.Equal(5, leftPage.Count);
-            Assert.Equal(6, rightPage.Count);
+            Assert.Equal(10, pivot);
+            Assert.Equal(6, leftPage.Count);
+            Assert.Equal(5, rightPage.Count);
 
-            for (var i = 0; i < leftPage.Count; ++i)
-            {
-                Assert.Equal(i, leftPage.Keys[i]);
-            }
+            Assert.Equal(8, leftPage.Keys[4]);
+            Assert.Equal(9, leftPage.Keys[5]);
 
-            Assert.Equal(5, rightPage.Keys[0]);
-            Assert.Equal(5, rightPage.Keys[1]);
-            Assert.Equal(6, rightPage.Keys[2]);
-            Assert.Equal(7, rightPage.Keys[3]);
-            Assert.Equal(8, rightPage.Keys[4]);
-            Assert.Equal(9, rightPage.Keys[5]);
+            Assert.Equal(pivot, rightPage.Keys[0]);
         }
 
         [Fact]
@@ -340,21 +336,28 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteDoesntMergeWhenNoMergeCandidate()
         {
+            // 1. fill a page
             var leftSibling = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
                 _ = leftSibling.Write(i, i);
             }
 
-            var (page, pivotKey) = leftSibling.Split();
-            var (rightSibling, _) = page.Split();
+            // 2. split it and then split the result so middle and right pages are both in underflow state
+            var (middlePage, _) = leftSibling.Split();
+            var (rightSibling, _) = middlePage.Split();
 
-            var insertCount = page.Size - page.Count;
-            for (var i = 0; i < insertCount; ++i)
+            // 3. fill the middle page so it is no longer in underflow and is unmergable
+            var insertCount = middlePage.Size - middlePage.Count;
+            var max = middlePage.MaxKey;
+            for (var i = max + 1; i < max + 1 + insertCount; ++i)
             {
-                _ = page.Write(pivotKey + 1, pivotKey + 1);
+                var (newPage, _, result) = middlePage.Write(i, i);
+                Assert.Null(newPage);
+                Assert.Equal(WriteResult.Inserted, result);
             }
 
+            // 4. delete an item from the right sibling in an unmergable condition
             _ = rightSibling.TryDelete(rightSibling.PivotKey, out var rightSiblingMergeInfo);
             Assert.False(rightSiblingMergeInfo.merged, "right sibling should not merge");
         }

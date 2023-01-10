@@ -4,19 +4,28 @@
     {
         private readonly int pageSize = 5;
 
-        [Fact]
-        public void SplitTest()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(13)]
+        public void SplitTest(int rndSeed)
         {
-            var random = new Random(10);
+            var random = new Random(rndSeed);
             var tree = new BTree<int, int>(this.pageSize);
+            var keys = new int[this.pageSize * 10];
             for (var i = 0; i < this.pageSize * 10; ++i)
             {
                 var kv = random.Next(this.pageSize * 10);
                 tree.Write(kv, kv);
+                keys[i] = kv;
             }
 
-            Assert.Equal(this.pageSize * 10, tree.Count);
-            Assert.Equal(3, tree.Height);
+            Assert.Equal(keys.Distinct().Count(), tree.Count);
+            var bestCaseHeight = (int)(Math.Log(tree.Count, this.pageSize + 1) + 1);
+            var worstCaseHeight = (int)(Math.Log(tree.Count, (this.pageSize + 1) / 2) + 1);
+            Assert.True(tree.Height >= bestCaseHeight && tree.Height <= worstCaseHeight, $"count: {tree.Count}, best: {bestCaseHeight}, worst: {worstCaseHeight}, actual: {tree.Height}");
         }
 
         [Fact]
