@@ -183,14 +183,14 @@
         [InlineData(5)]
         [InlineData(7)]
         [InlineData(13)]
-        public void InsertAndRead(int rndSeed)
+        public void WriteAndRead(int rndSeed)
         {
-            var localPageSize = 8192;
+            var localPageSize = 4096;
             var tree = new BTree<int, int>(localPageSize);
             var random = new Random(rndSeed);
-            var maxRnd = 4069 * 2;
+            var maxRnd = localPageSize * 2;
 
-            for (var i = 0; i < 250000; ++i)
+            for (var i = 0; i < localPageSize * 10; ++i)
             {
                 var key = random.Next(maxRnd);
                 var expectedValue = random.Next(maxRnd);
