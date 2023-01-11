@@ -109,27 +109,29 @@ namespace BTrees.Pages
 
         internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
-            var newPage = new PivotPage<TKey, TValue>(this.Size, this);
-            var newKeys = new Span<TKey>(newPage.Keys);
-            var newSubtrees = new Span<Page<TKey, TValue>?>(newPage.subtrees);
-
-            var keys = new Span<TKey>(this.Keys);
-            var subtrees = new Span<Page<TKey, TValue>?>(this.subtrees);
-
             var count = this.Count;
             var newPivotIndex = count / 2;
-            var j = 0;
-            for (var i = newPivotIndex; i < count; ++i)
+            var copyFromIndex = newPivotIndex + 1;
+
+            var newPageCount = count - copyFromIndex;
+            var subtreesLength = newPageCount + 1;
+            var keys = new Span<TKey>(this.Keys, copyFromIndex, newPageCount);
+            var subtrees = new Span<Page<TKey, TValue>?>(this.subtrees, copyFromIndex, subtreesLength);
+
+            var newPage = new PivotPage<TKey, TValue>(this.Size, this);
+            var newKeys = new Span<TKey>(newPage.Keys, 0, newPageCount);
+            var newSubtrees = new Span<Page<TKey, TValue>?>(newPage.subtrees, 0, newPageCount + 1);
+            newPage.Count = newPageCount;
+            newPage.PivotKey = this.Keys[newPivotIndex];
+
+            for (var i = 0; i < newPageCount; ++i)
             {
-                newKeys[j] = keys[i];
-                newSubtrees[j] = subtrees[i];
-                ++j;
+                newKeys[i] = keys[i];
+                newSubtrees[i] = subtrees[i];
             }
 
-            newSubtrees[j] = subtrees[count];
+            newSubtrees[newPageCount] = subtrees[newPageCount];
 
-            newPage.PivotKey = newKeys[0];
-            newPage.Count = count - newPivotIndex;
             this.Count = newPivotIndex;
 
             return (newPage, newPage.PivotKey);

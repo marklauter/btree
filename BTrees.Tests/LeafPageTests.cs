@@ -305,32 +305,38 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteMergesRightWhenCountLTKDiv2AndPreferredChoiceIsRightSibling()
         {
-            var leftSibling = new LeafPage<int, int>(this.pageSize);
-            for (var i = 0; i < this.pageSize; ++i)
+            var leftPage = new LeafPage<int, int>(this.pageSize);
+            var count = this.pageSize * 10;
+            for (var i = 0; i < count; i += 10)
             {
-                _ = leftSibling.Write(i, i);
+                _ = leftPage.Write(i, i);
             }
 
-            var (page, pivotKey) = leftSibling.Split();
-            var (rightSibling, _) = page.Split();
+            var (middlePage, middlePivotKey) = leftPage.Split();
+            Assert.Equal(50, middlePivotKey);
+            var (rightPage, rightPivotKey) = middlePage.Split();
+            Assert.Equal(70, rightPivotKey);
 
-            var insertCount = page.Size - page.Count;
-            for (var i = 0; i < insertCount; ++i)
+            for (var i = 61; i < 69; ++i)
             {
-                _ = page.Write(pivotKey + 1, pivotKey + 1);
+                var (newPage, _, result) = middlePage.Write(i, i);
+                Assert.Null(newPage);
+                Assert.Equal(WriteResult.Inserted, result);
             }
 
-            _ = rightSibling.TryDelete(rightSibling.PivotKey, out _);
+            var deleted = rightPage.TryDelete(rightPage.PivotKey, out var mergeInfo1);
+            Assert.True(deleted);
+            Assert.False(mergeInfo1.merged);
 
-            var deleteCount = page.Count / 2;
-            for (var i = 0; i < deleteCount; ++i)
+            var deleteUntilIndex = middlePage.Count / 2;
+            for (var i = middlePage.Count - 1; i >= deleteUntilIndex; i--)
             {
-                _ = page.TryDelete(pivotKey + 1, out _);
+                Assert.True(middlePage.TryDelete(middlePage.Keys[i], out _));
             }
 
-            _ = page.TryDelete(page.PivotKey, out var mergeInfo);
+            _ = middlePage.TryDelete(middlePage.PivotKey, out var mergeInfo);
             Assert.True(mergeInfo.merged, "merged?");
-            Assert.Equal(rightSibling.PivotKey, mergeInfo.deprecatedPivotKey);
+            Assert.Equal(rightPage.PivotKey, mergeInfo.deprecatedPivotKey);
         }
 
         [Fact]

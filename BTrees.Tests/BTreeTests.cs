@@ -188,7 +188,7 @@
             var localPageSize = 8192;
             var tree = new BTree<int, int>(localPageSize);
             var random = new Random(rndSeed);
-            var maxRnd = 4069;
+            var maxRnd = 4069 * 2;
 
             for (var i = 0; i < 250000; ++i)
             {

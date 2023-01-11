@@ -25,19 +25,26 @@ namespace BTrees.Tests
         {
             var leftpage = new LeafPage<int, int>(this.pageSize);
             var rightpage = new LeafPage<int, int>(this.pageSize);
+
             for (var i = 0; i < this.pageSize / 2; ++i)
             {
-                _ = leftpage.Write(i, i + 1);
-                _ = rightpage.Write(i + 5, i + 6);
+                _ = leftpage.Write(i, i);
             }
 
-            var originalCount = leftpage.Count;
+            for (var i = this.pageSize + 1; i < this.pageSize + this.pageSize / 2; ++i)
+            {
+                _ = rightpage.Write(i, i);
+            }
+
             var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage, rightpage.MinKey);
             Assert.Equal(1, pivotPage.Count);
-            _ = pivotPage.Write(4, 5);
 
-            Assert.Equal(originalCount, leftpage.Count - 1);
-            Assert.Equal(originalCount, rightpage.Count);
+            var expectedLeftCount = leftpage.Count + 1;
+            var expectedRightCount = rightpage.Count;
+            _ = pivotPage.Write(this.pageSize, this.pageSize);
+
+            Assert.Equal(expectedLeftCount, leftpage.Count);
+            Assert.Equal(expectedRightCount, rightpage.Count);
         }
 
         [Fact]
@@ -69,7 +76,8 @@ namespace BTrees.Tests
             Assert.NotNull(rightPivotPage);
             Assert.Equal(2, leftPivotPage.Count);
             Assert.Equal(2, rightPivotPage.Count);
-            Assert.Equal(newPivotKey, rightPivotPage.MinKey);
+            Assert.Equal(12, newPivotKey);
+            Assert.Equal(16, rightPivotPage.MinKey);
         }
     }
 }
