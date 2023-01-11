@@ -4,17 +4,41 @@
     {
         private readonly int pageSize = 5;
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(13)]
+        public void SplitTest(int rndSeed)
+        {
+            var random = new Random(rndSeed);
+            var tree = new BTree<int, int>(this.pageSize);
+            var keys = new int[this.pageSize * 10];
+            for (var i = 0; i < this.pageSize * 10; ++i)
+            {
+                var kv = random.Next(this.pageSize * 10);
+                tree.Write(kv, kv);
+                keys[i] = kv;
+            }
+
+            Assert.Equal(keys.Distinct().Count(), tree.Count);
+            var bestCaseHeight = (int)(Math.Log(tree.Count, this.pageSize + 1) + 1);
+            var worstCaseHeight = (int)(Math.Log(tree.Count, (this.pageSize + 1) / 2) + 1);
+            Assert.True(tree.Height >= bestCaseHeight && tree.Height <= worstCaseHeight, $"count: {tree.Count}, best: {bestCaseHeight}, worst: {worstCaseHeight}, actual: {tree.Height}");
+        }
+
         [Fact]
-        public void SplitTest()
+        public void RightOnlyInsertTest()
         {
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 10; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
-            Assert.Equal(4, tree.Degree);
+            Assert.Equal(3, tree.Height);
         }
 
         public static int BinarySearch(int[] array, int target)
@@ -113,7 +137,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
             var found = tree.TryRead(1, out var value);
@@ -127,7 +151,7 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
             var found = tree.TryRead(this.pageSize * 10, out _);
@@ -140,17 +164,43 @@
             var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 3; ++i)
             {
-                tree.Insert(i + 1, i + 1);
+                tree.Write(i + 1, i + 1);
             }
 
-            Assert.Equal(2, tree.Degree);
+            Assert.Equal(2, tree.Height);
 
             for (var i = 0; i < this.pageSize * 3 - 1; ++i)
             {
                 Assert.True(tree.TryDelete(i + 1), $"delete i: {i + 1}");
             }
 
-            Assert.Equal(1, tree.Degree);
+            Assert.Equal(1, tree.Height);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(7)]
+        [InlineData(13)]
+        public void InsertAndRead(int rndSeed)
+        {
+            var localPageSize = 8192;
+            var tree = new BTree<int, int>(localPageSize);
+            var random = new Random(rndSeed);
+            var maxRnd = 4069 * 2;
+
+            for (var i = 0; i < 250000; ++i)
+            {
+                var key = random.Next(maxRnd);
+                var expectedValue = random.Next(maxRnd);
+                tree.Write(key, expectedValue);
+                Assert.True(tree.TryRead(key, out var actualValue), $"count: {tree.Count}, kvp: ({key}, {actualValue})");
+                Assert.Equal(expectedValue, actualValue);
+                var bestCaseHeight = (int)(Math.Log(tree.Count, localPageSize + 1) + 1);
+                var worstCaseHeight = (int)(Math.Log(tree.Count, (localPageSize + 1) / 2) + 1);
+                Assert.True(tree.Height >= bestCaseHeight && tree.Height <= worstCaseHeight, $"count: {tree.Count}, best: {bestCaseHeight}, worst: {worstCaseHeight}, actual: {tree.Height}");
+            }
         }
     }
 }

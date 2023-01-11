@@ -7,13 +7,15 @@ namespace BTrees.Pages
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        internal readonly TValue[] children;
+        internal readonly TValue[] values;
+
+        public override int Order => this.Size;
 
         #region CTOR
         public LeafPage(int size)
             : base(size)
         {
-            this.children = new TValue[size];
+            this.values = new TValue[size];
         }
 
         internal LeafPage(
@@ -23,35 +25,16 @@ namespace BTrees.Pages
                   size,
                   leftSibling)
         {
-            this.children = new TValue[size];
+            this.values = new TValue[size];
         }
         #endregion
-
-        private void InsertInternal(TKey key, TValue value)
-        {
-            var index = this.IndexOfKey(key);
-            index = index > 0
-                ? index + 1
-                : index < 0
-                    ? ~index
-                    : index;
-
-            if (index != this.Count)
-            {
-                this.ShiftRight(index);
-            }
-
-            this.Keys[index] = key;
-            this.children[index] = value;
-            ++this.Count;
-        }
 
         protected override void ShiftLeft(int index)
         {
             for (var i = index; i < this.Count - 1; ++i)
             {
                 this.Keys[i] = this.Keys[i + 1];
-                this.children[i] = this.children[i + 1];
+                this.values[i] = this.values[i + 1];
             }
         }
 
@@ -60,7 +43,7 @@ namespace BTrees.Pages
             for (var i = this.Count - 1; i >= index; --i)
             {
                 this.Keys[i + 1] = this.Keys[i];
-                this.children[i + 1] = this.children[i];
+                this.values[i + 1] = this.values[i];
             }
         }
 
@@ -70,10 +53,10 @@ namespace BTrees.Pages
             var endIndex = sourcePage.Count + startIndex;
 
             var keys = new Span<TKey>(this.Keys);
-            var children = new Span<TValue>(this.children);
+            var children = new Span<TValue>(this.values);
 
             var sourceKeys = new Span<TKey>(sourcePage.Keys);
-            var sourceChildren = new Span<TValue>(((LeafPage<TKey, TValue>)sourcePage).children);
+            var sourceChildren = new Span<TValue>(((LeafPage<TKey, TValue>)sourcePage).values);
 
             var j = 0;
             for (var i = startIndex; i < endIndex; ++i)
@@ -94,13 +77,14 @@ namespace BTrees.Pages
 
         internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
-            var count = this.Count;
-            var keys = new Span<TKey>(this.Keys);
-            var children = new Span<TValue>(this.children);
             var newPage = new LeafPage<TKey, TValue>(this.Size, this);
             var newKeys = new Span<TKey>(newPage.Keys);
-            var newChildren = new Span<TValue>(newPage.children);
+            var newChildren = new Span<TValue?>(newPage.values);
 
+            var keys = new Span<TKey>(this.Keys);
+            var children = new Span<TValue?>(this.values);
+
+            var count = this.Count;
             var newPivotIndex = count / 2;
             var j = 0;
             for (var i = newPivotIndex; i < count; ++i)
@@ -122,25 +106,71 @@ namespace BTrees.Pages
             return this.RemoveKey(key, out mergeInfo);
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) Write(TKey key, TValue value)
         {
             if (!this.IsOverflow)
             {
-                this.InsertInternal(key, value);
-                return (null, default);
+                return (null, default, this.WriteInternal(key, value));
             }
 
-            var (newPage, newPivotKey) = this.Split();
-            if (key.CompareTo(newPivotKey) <= 0)
+            var count = this.Count;
+            var index = this.IndexOfKey(key);
+            var keyFound = index >= 0;
+            var rightOnly = ~index == count;
+
+            var (newPage, newPivotKey) = keyFound
+                ? (null, default)
+                : rightOnly
+                    ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
+                    : this.Split();
+
+            var destinationPage = keyFound
+                ? this
+                : rightOnly || key.CompareTo(newPivotKey) >= 0
+                    ? ((LeafPage<TKey, TValue>?)newPage)
+                    : this;
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            return (newPage, newPivotKey, destinationPage.WriteInternal(key, value));
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        }
+
+        private WriteResult WriteInternal(TKey key, TValue value)
+        {
+            if (this.IsEmpty)
             {
-                this.InsertInternal(key, value);
-            }
-            else
-            {
-                ((LeafPage<TKey, TValue>)newPage).InsertInternal(key, value);
+                this.Keys[0] = key;
+                this.values[0] = value;
+                ++this.Count;
+
+                return WriteResult.Inserted;
             }
 
-            return (newPage, newPivotKey);
+            var index = this.IndexOfKey(key);
+            var keyNotFound = index < 0;
+
+            index = keyNotFound
+                    ? ~index
+                    : index;
+
+            var writeResult = keyNotFound
+                ? WriteResult.Inserted
+                : WriteResult.Updated;
+
+            // todo: shift in-place will be replaced with page clone that skips a slot as part of copy-on-write updates
+            if (keyNotFound && index != this.Count)
+            {
+                this.ShiftRight(index);
+            }
+
+            this.Keys[index] = key;
+            this.values[index] = value;
+            if (writeResult == WriteResult.Inserted)
+            {
+                ++this.Count;
+            }
+
+            return writeResult;
         }
 
         public override bool TryRead(TKey key, out TValue? value)
@@ -152,7 +182,7 @@ namespace BTrees.Pages
                 return false;
             }
 
-            value = this.children[index];
+            value = this.values[index];
             return true;
         }
     }

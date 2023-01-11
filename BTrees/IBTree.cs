@@ -7,9 +7,9 @@ namespace BTrees
     {
         long Count { get; }
 
-        int Degree { get; }
+        int Height { get; }
 
-        void Insert(TKey key, TValue value);
+        void Write(TKey key, TValue value);
 
         bool TryDelete(TKey key);
 

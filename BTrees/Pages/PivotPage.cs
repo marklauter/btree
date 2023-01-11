@@ -7,13 +7,15 @@ namespace BTrees.Pages
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        internal readonly Page<TKey, TValue>[] children;
+        internal readonly Page<TKey, TValue>[] subtrees;
+
+        public override int Order => this.Size + 1;
 
         #region CTOR
         public PivotPage(int size)
             : base(size)
         {
-            this.children = new Page<TKey, TValue>[size + 1];
+            this.subtrees = new Page<TKey, TValue>[size + 1];
         }
 
         public PivotPage(
@@ -24,34 +26,34 @@ namespace BTrees.Pages
             : this(size)
         {
             this.Keys[0] = pivotKey;
-            this.children[0] = leftPage;
-            this.children[1] = rightPage;
+            this.subtrees[0] = leftPage;
+            this.subtrees[1] = rightPage;
             this.Count = 1;
         }
 
         internal PivotPage(int size, Page<TKey, TValue> leftSibling)
             : base(size, leftSibling)
         {
-            this.children = new Page<TKey, TValue>[size + 1];
+            this.subtrees = new Page<TKey, TValue>[size + 1];
         }
         #endregion
 
-        private void InsertInternal(TKey key, Page<TKey, TValue> value)
+        private void WriteInternal(TKey key, Page<TKey, TValue> value)
         {
             var index = this.IndexOfKey(key);
+            var shiftRequired = index < 0;
             index = index > 0
-                ? index + 1
-                : index < 0
-                    ? ~index
-                    : index;
+                    ? index
+                    : ~index;
 
-            if (index != this.Count)
+            shiftRequired = index != this.Count && shiftRequired;
+            if (shiftRequired)
             {
                 this.ShiftRight(index);
             }
 
             this.Keys[index] = key;
-            this.children[index + 1] = value;
+            this.subtrees[index + 1] = value;
             ++this.Count;
         }
 
@@ -60,7 +62,7 @@ namespace BTrees.Pages
             for (var i = index; i < this.Count - 1; ++i)
             {
                 this.Keys[i] = this.Keys[i + 1];
-                this.children[i + 1] = this.children[i + 2];
+                this.subtrees[i + 1] = this.subtrees[i + 2];
             }
         }
 
@@ -69,7 +71,7 @@ namespace BTrees.Pages
             for (var i = this.Count - 1; i >= index; --i)
             {
                 this.Keys[i + 1] = this.Keys[i];
-                this.children[i + 2] = this.children[i + 1];
+                this.subtrees[i + 2] = this.subtrees[i + 1];
             }
         }
 
@@ -78,9 +80,9 @@ namespace BTrees.Pages
             var startIndex = this.Count;
             var endIndex = sourcePage.Count + startIndex;
             var keys = new Span<TKey>(this.Keys);
-            var children = new Span<Page<TKey, TValue>>(this.children);
+            var children = new Span<Page<TKey, TValue>>(this.subtrees);
             var sourceKeys = new Span<TKey>(this.Keys);
-            var sourceChildren = new Span<Page<TKey, TValue>>(this.children);
+            var sourceChildren = new Span<Page<TKey, TValue>>(this.subtrees);
 
             var j = 0;
             for (var i = startIndex; i < endIndex; ++i)
@@ -102,31 +104,34 @@ namespace BTrees.Pages
                 ? ~index
                 : index + 1;
 
-            return this.children[index];
+            return this.subtrees[index];
         }
 
         internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
         {
             var count = this.Count;
-            var keys = new Span<TKey>(this.Keys);
-            var children = new Span<Page<TKey, TValue>>(this.children);
-            var newPage = new PivotPage<TKey, TValue>(this.Size, this);
-            var newKeys = new Span<TKey>(newPage.Keys);
-            var newChildren = new Span<Page<TKey, TValue>>(newPage.children);
-
             var newPivotIndex = count / 2;
-            var j = 0;
-            for (var i = newPivotIndex; i < count; ++i)
+            var copyFromIndex = newPivotIndex + 1;
+
+            var newPageCount = count - copyFromIndex;
+            var subtreesLength = newPageCount + 1;
+            var keys = new Span<TKey>(this.Keys, copyFromIndex, newPageCount);
+            var subtrees = new Span<Page<TKey, TValue>?>(this.subtrees, copyFromIndex, subtreesLength);
+
+            var newPage = new PivotPage<TKey, TValue>(this.Size, this);
+            var newKeys = new Span<TKey>(newPage.Keys, 0, newPageCount);
+            var newSubtrees = new Span<Page<TKey, TValue>?>(newPage.subtrees, 0, newPageCount + 1);
+            newPage.Count = newPageCount;
+            newPage.PivotKey = this.Keys[newPivotIndex];
+
+            for (var i = 0; i < newPageCount; ++i)
             {
-                newKeys[j] = keys[i];
-                newChildren[j] = children[i];
-                ++j;
+                newKeys[i] = keys[i];
+                newSubtrees[i] = subtrees[i];
             }
 
-            newChildren[j] = children[count];
+            newSubtrees[newPageCount] = subtrees[newPageCount];
 
-            newPage.PivotKey = newKeys[0];
-            newPage.Count = count - newPivotIndex;
             this.Count = newPivotIndex;
 
             return (newPage, newPage.PivotKey);
@@ -146,38 +151,41 @@ namespace BTrees.Pages
                 _ = this.RemoveKey(subTreeMergeInfo.deprecatedPivotKey, out mergeInfo);
 #pragma warning restore CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-                this.children[this.Count + 1] = null;
+                this.subtrees[this.Count + 1] = null;
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
             }
 
             return deleted;
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value)
+        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) Write(TKey key, TValue value)
         {
             var page = this.SelectSubtree(key);
-            var (newSubTree, newSubTreePivotKey) = page.Insert(key, value);
+            var (newSubTree, newSubTreePivotKey, result) = page.Write(key, value);
             if (newSubTree is null)
             {
-                return (null, default);
+                return (null, default, result);
             }
 
-#pragma warning disable CS8604 // Possible null reference argument. - stfu, it's not null
             if (!this.IsOverflow)
             {
-                this.InsertInternal(newSubTreePivotKey, newSubTree);
-                return (null, default);
+#pragma warning disable CS8604 // Possible null reference argument.
+                this.WriteInternal(newSubTreePivotKey, newSubTree);
+#pragma warning restore CS8604 // Possible null reference argument.
+                return (null, default, result);
             }
 
             var (newPage, newPivotKey) = this.Split();
-            var pivotPage = key.CompareTo(newPivotKey) <= 0
-                ? this
-                : (PivotPage<TKey, TValue>)newPage;
 
-            pivotPage.InsertInternal(newSubTreePivotKey, newSubTree);
+            var destinationPage = key.CompareTo(newPivotKey) >= 0
+                ? (PivotPage<TKey, TValue>)newPage
+                : this;
+
+#pragma warning disable CS8604 // Possible null reference argument.
+            destinationPage.WriteInternal(newSubTreePivotKey, newSubTree);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-            return (newPage, newPivotKey);
+            return (newPage, newPivotKey, result);
         }
 
         public override bool TryRead(TKey key, out TValue? value)

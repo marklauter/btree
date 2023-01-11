@@ -11,7 +11,7 @@ namespace BTrees
     {
         public long Count { get; private set; }
 
-        public int Degree { get; private set; } = 1;
+        public int Height { get; private set; } = 1;
 
         private readonly int pageSize;
         private Page<TKey, TValue> root;
@@ -39,8 +39,8 @@ namespace BTrees
 
                     if (rootPage.IsEmpty)
                     {
-                        this.root = rootPage.children[0];
-                        --this.Degree;
+                        this.root = rootPage.subtrees[0];
+                        --this.Height;
                     }
                 }
             }
@@ -48,12 +48,12 @@ namespace BTrees
             return deleted;
         }
 
-        public void Insert(TKey key, TValue value)
+        public void Write(TKey key, TValue value)
         {
-            var (newSubPage, newPivotKey) = this.root.Insert(key, value);
+            var (newSubPage, newPivotKey, writeResult) = this.root.Write(key, value);
             if (newSubPage is not null)
             {
-#pragma warning disable CS8604 // Possible null reference argument. - it's not null
+#pragma warning disable CS8604 // Possible null reference argument.
                 this.root = new PivotPage<TKey, TValue>(
                     this.pageSize,
                     this.root,
@@ -61,10 +61,13 @@ namespace BTrees
                     newPivotKey);
 #pragma warning restore CS8604 // Possible null reference argument.
 
-                ++this.Degree;
+                ++this.Height;
             }
 
-            ++this.Count;
+            if (writeResult == WriteResult.Inserted)
+            {
+                ++this.Count;
+            }
         }
 
         public bool TryRead(TKey key, out TValue? value)
@@ -84,6 +87,11 @@ namespace BTrees
         {
             // todo: this can use the leaf page's right sibling
             // todo: if we identify the left and right most pages then we can pre-load first, last and all pages between that are involved in the range scan
+            throw new NotImplementedException();
+        }
+
+        public bool TryUpdate(TKey key, TValue value)
+        {
             throw new NotImplementedException();
         }
     }

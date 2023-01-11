@@ -18,6 +18,8 @@ namespace BTrees.Pages
         public TKey MinKey => this.Count != 0 ? this.Keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
         public TKey MaxKey => this.Count != 0 ? this.Keys[this.Count - 1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
         public TKey? PivotKey { get; protected set; }
+        public abstract int Order { get; }
+
 
         #region CTOR
         public Page(int size)
@@ -45,14 +47,9 @@ namespace BTrees.Pages
 
         internal int IndexOfKey(TKey key)
         {
-            if (this.IsEmpty)
-            {
-                return 0;
-            }
-
             var low = 0;
             var high = this.Count - 1;
-            var keys = new Span<TKey>(this.Keys);
+            var keys = new Span<TKey>(this.Keys, 0, this.Count);
 
             while (low <= high)
             {
@@ -145,9 +142,7 @@ namespace BTrees.Pages
                     if (destinationCandidate is not null
                         && destinationCandidate.CanMerge(sourceCandidate))
                     {
-#pragma warning disable CS8604 // Possible null reference argument. - CanMerge() performs the null check
                         destinationCandidate.Merge(sourceCandidate);
-#pragma warning restore CS8604 // Possible null reference argument.
                         mergeInfo.deprecatedPivotKey = sourceCandidate.PivotKey;
                         destinationCandidate.RightSibling = sourceCandidate.RightSibling;
 
@@ -167,7 +162,7 @@ namespace BTrees.Pages
         /// <returns>True if delete was successful.</returns>
         public abstract bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo);
 
-        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey) Insert(TKey key, TValue value);
+        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) Write(TKey key, TValue value);
 
         public abstract bool TryRead(TKey key, out TValue? value);
     }
