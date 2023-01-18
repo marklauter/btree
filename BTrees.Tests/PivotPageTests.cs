@@ -9,39 +9,39 @@ namespace BTrees.Tests
         [Fact]
         public void NewPageIsEmpty()
         {
-            var page = new PivotPage<int, int>(this.pageSize);
+            using var page = new PivotPage<int, int>(this.pageSize);
             Assert.True(page.IsEmpty);
         }
 
         [Fact]
         public void NewPageHasCorrectPageSize()
         {
-            var page = new PivotPage<int, int>(this.pageSize);
+            using var page = new PivotPage<int, int>(this.pageSize);
             Assert.Equal(this.pageSize, page.Size);
         }
 
         [Fact]
         public void InsertIncrememtsLeafNodeCount()
         {
-            var leftpage = new LeafPage<int, int>(this.pageSize);
-            var rightpage = new LeafPage<int, int>(this.pageSize);
+            using var leftpage = new LeafPage<int, int>(this.pageSize);
+            using var rightpage = new LeafPage<int, int>(this.pageSize);
 
             for (var i = 0; i < this.pageSize / 2; ++i)
             {
-                _ = leftpage.Write(i, i);
+                Assert.True(leftpage.TryWrite(i, i, out _));
             }
 
             for (var i = this.pageSize + 1; i < this.pageSize + this.pageSize / 2; ++i)
             {
-                _ = rightpage.Write(i, i);
+                Assert.True(rightpage.TryWrite(i, i, out _));
             }
 
-            var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage, rightpage.MinKey);
+            using var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage, rightpage.MinKey);
             Assert.Equal(1, pivotPage.Count);
 
             var expectedLeftCount = leftpage.Count + 1;
             var expectedRightCount = rightpage.Count;
-            _ = pivotPage.Write(this.pageSize, this.pageSize);
+            Assert.True(pivotPage.TryWrite(this.pageSize, this.pageSize, out _));
 
             Assert.Equal(expectedLeftCount, leftpage.Count);
             Assert.Equal(expectedRightCount, rightpage.Count);
@@ -51,33 +51,33 @@ namespace BTrees.Tests
         public void PagesSplitOnInsertsCorrectly()
         {
             var pageSize = 4;
-            var leftLeafPage = new LeafPage<int, int>(pageSize);
+            using var leftLeafPage = new LeafPage<int, int>(pageSize);
             var index = 0;
             for (var i = 0; i < pageSize; ++i)
             {
-                var (newPage, _, _) = leftLeafPage.Write(index, index);
+                Assert.True(leftLeafPage.TryWrite(index, index, out var response));
                 ++index;
-                Assert.Null(newPage);
+                Assert.Null(response.newPage);
             }
 
-            var (rightLeafPage, newLeafPivotKey, _) = leftLeafPage.Write(index, index);
+            Assert.True(leftLeafPage.TryWrite(index, index, out var rightLeafResponse));
             ++index;
-            Assert.NotNull(rightLeafPage);
+            Assert.NotNull(rightLeafResponse.newPage);
 
-            var leftPivotPage = new PivotPage<int, int>(pageSize, leftLeafPage, rightLeafPage, newLeafPivotKey);
+            using var leftPivotPage = new PivotPage<int, int>(pageSize, leftLeafPage, rightLeafResponse.newPage, rightLeafResponse.newPivotKey);
             for (var i = 0; i < 15; ++i)
             {
-                var (newPage, _, _) = leftPivotPage.Write(index, index);
+                Assert.True(leftPivotPage.TryWrite(index, index, out var response));
                 ++index;
-                Assert.Null(newPage);
+                Assert.Null(response.newPage);
             }
 
-            var (rightPivotPage, newPivotKey, _) = leftPivotPage.Write(index, index);
-            Assert.NotNull(rightPivotPage);
+            Assert.True(leftPivotPage.TryWrite(index, index, out var rightPivotResponse));
+            Assert.NotNull(rightPivotResponse.newPage);
             Assert.Equal(2, leftPivotPage.Count);
-            Assert.Equal(2, rightPivotPage.Count);
-            Assert.Equal(12, newPivotKey);
-            Assert.Equal(16, rightPivotPage.MinKey);
+            Assert.Equal(2, rightPivotResponse.newPage.Count);
+            Assert.Equal(12, rightPivotResponse.newPivotKey);
+            Assert.Equal(16, rightPivotResponse.newPage.MinKey);
         }
     }
 }

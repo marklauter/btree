@@ -9,7 +9,7 @@ namespace BTrees
 
         int Height { get; }
 
-        void Write(TKey key, TValue value);
+        bool TryWrite(TKey key, TValue value);
 
         bool TryDelete(TKey key);
 

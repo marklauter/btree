@@ -13,12 +13,13 @@
         public void SplitTest(int rndSeed)
         {
             var random = new Random(rndSeed);
-            var tree = new BTree<int, int>(this.pageSize);
-            var keys = new int[this.pageSize * 10];
-            for (var i = 0; i < this.pageSize * 10; ++i)
+            using var tree = new BTree<int, int>(this.pageSize);
+            var keys = new int[this.pageSize * 100];
+            for (var i = 0; i < this.pageSize * 100; ++i)
             {
                 var kv = random.Next(this.pageSize * 10);
-                tree.Write(kv, kv);
+                var writeSuccess = tree.TryWrite(kv, kv);
+                Assert.True(writeSuccess);
                 keys[i] = kv;
             }
 
@@ -31,10 +32,11 @@
         [Fact]
         public void RightOnlyInsertTest()
         {
-            var tree = new BTree<int, int>(this.pageSize);
+            using var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 10; ++i)
             {
-                tree.Write(i + 1, i + 1);
+                var writeSuccess = tree.TryWrite(i + 1, i + 1);
+                Assert.True(writeSuccess);
             }
 
             Assert.Equal(this.pageSize * 10, tree.Count);
@@ -134,10 +136,11 @@
         [Fact]
         public void ReadReturnsValueForKey()
         {
-            var tree = new BTree<int, int>(this.pageSize);
+            using var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Write(i + 1, i + 1);
+                var writeSuccess = tree.TryWrite(i + 1, i + 1);
+                Assert.True(writeSuccess);
             }
 
             var found = tree.TryRead(1, out var value);
@@ -148,10 +151,11 @@
         [Fact]
         public void ReadReturnsFalseWhenKeyIsNotFound()
         {
-            var tree = new BTree<int, int>(this.pageSize);
+            using var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 5; ++i)
             {
-                tree.Write(i + 1, i + 1);
+                var writeSuccess = tree.TryWrite(i + 1, i + 1);
+                Assert.True(writeSuccess);
             }
 
             var found = tree.TryRead(this.pageSize * 10, out _);
@@ -161,10 +165,11 @@
         [Fact]
         public void DeleteMergesUnderFlowLeaves()
         {
-            var tree = new BTree<int, int>(this.pageSize);
+            using var tree = new BTree<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 3; ++i)
             {
-                tree.Write(i + 1, i + 1);
+                var writeSuccess = tree.TryWrite(i + 1, i + 1);
+                Assert.True(writeSuccess);
             }
 
             Assert.Equal(2, tree.Height);
@@ -186,7 +191,7 @@
         public void WriteAndRead(int rndSeed)
         {
             var localPageSize = 4096;
-            var tree = new BTree<int, int>(localPageSize);
+            using var tree = new BTree<int, int>(localPageSize);
             var random = new Random(rndSeed);
             var maxRnd = localPageSize * 2;
 
@@ -194,7 +199,8 @@
             {
                 var key = random.Next(maxRnd);
                 var expectedValue = random.Next(maxRnd);
-                tree.Write(key, expectedValue);
+                var writeSuccess = tree.TryWrite(key, expectedValue);
+                Assert.True(writeSuccess);
                 Assert.True(tree.TryRead(key, out var actualValue), $"count: {tree.Count}, kvp: ({key}, {actualValue})");
                 Assert.Equal(expectedValue, actualValue);
                 var bestCaseHeight = (int)(Math.Log(tree.Count, localPageSize + 1) + 1);

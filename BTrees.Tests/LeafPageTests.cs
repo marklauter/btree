@@ -9,29 +9,30 @@ namespace BTrees.Tests
         [Fact]
         public void NewPageIsEmpty()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             Assert.True(page.IsEmpty);
         }
 
         [Fact]
         public void NewPageHasCorrectPageSize()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             Assert.Equal(this.pageSize, page.Size);
         }
 
         [Fact]
         public void InsertIncrememtsCount()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
-            _ = page.Write(1, 1);
+            using var page = new LeafPage<int, int>(this.pageSize);
+            var writeSuccess = page.TryWrite(1, 1, out _);
+            Assert.True(writeSuccess);
             Assert.Equal(1, page.Count);
         }
 
         [Fact]
         public void SelectSubtreeReturnsSelf()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             var subtree = page.SelectSubtree(1);
             Assert.Equal(page, subtree);
         }
@@ -64,15 +65,15 @@ namespace BTrees.Tests
         [Fact]
         public void IndexOfKeyTest()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
-            _ = page.Write(1, 1); // 0 goes to index 0
-            _ = page.Write(2, 2); // 3 goes to index 2
-            _ = page.Write(4, 4); // 4 goes to index 3
-            _ = page.Write(5, 5);
-            _ = page.Write(6, 6);
-            _ = page.Write(7, 7); // 8 goes to index 6
-            _ = page.Write(9, 9);
-            _ = page.Write(10, 10); // 11 goes to index 8
+            using var page = new LeafPage<int, int>(this.pageSize);
+            Assert.True(page.TryWrite(1, 1, out _)); // 0 goes to index 0
+            Assert.True(page.TryWrite(2, 2, out _)); // 3 goes to index 2
+            Assert.True(page.TryWrite(4, 4, out _)); // 4 goes to index 3
+            Assert.True(page.TryWrite(5, 5, out _));
+            Assert.True(page.TryWrite(6, 6, out _));
+            Assert.True(page.TryWrite(7, 7, out _)); // 8 goes to index 6
+            Assert.True(page.TryWrite(9, 9, out _));
+            Assert.True(page.TryWrite(10, 10, out _)); // 11 goes to index 8
 
             var index = page.IndexOfKey(3);
             Assert.Equal(2, ~index);
@@ -96,23 +97,23 @@ namespace BTrees.Tests
         [Fact]
         public void SortedInsertTest()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
-            _ = page.Write(1, 1); // 0 goes to index 0
-            _ = page.Write(2, 2); // 3 goes to index 2
-            _ = page.Write(4, 4);
-            _ = page.Write(5, 5);
-            _ = page.Write(6, 6);
-            _ = page.Write(7, 7); // 8 goes to index 6
-            _ = page.Write(9, 9);
-            _ = page.Write(10, 10); // 11 goes to index 8
+            using var page = new LeafPage<int, int>(this.pageSize);
+            Assert.True(page.TryWrite(1, 1, out _)); // 0 goes to index 0
+            Assert.True(page.TryWrite(2, 2, out _)); // 3 goes to index 2
+            Assert.True(page.TryWrite(4, 4, out _));
+            Assert.True(page.TryWrite(5, 5, out _));
+            Assert.True(page.TryWrite(6, 6, out _));
+            Assert.True(page.TryWrite(7, 7, out _)); // 8 goes to index 6
+            Assert.True(page.TryWrite(9, 9, out _));
+            Assert.True(page.TryWrite(10, 10, out _)); // 11 goes to index 8
 
-            _ = page.Write(3, 3);
+            Assert.True(page.TryWrite(3, 3, out _));
             var sortedKeys = page.Keys
                 .Take(page.Count)
                 .Order();
             Assert.Equal(sortedKeys, page.Keys.Take(page.Count));
 
-            _ = page.Write(8, 8);
+            Assert.True(page.TryWrite(8, 8, out _));
             sortedKeys = page.Keys
                 .Take(page.Count)
                 .Order();
@@ -123,78 +124,78 @@ namespace BTrees.Tests
         public void SplitTest()
         {
             var maxKey = this.pageSize * 2;
-            var leftPage = new LeafPage<int, int>(this.pageSize);
+            using var leftPage = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < maxKey; i += 2)
             {
-                var (newPage, _, writeResultI) = leftPage.Write(i, i);
-                Assert.Equal(WriteResult.Inserted, writeResultI);
-                Assert.Null(newPage);
+                Assert.True(leftPage.TryWrite(i, i, out var responseI));
+                Assert.Equal(WriteResult.Inserted, responseI.result);
+                Assert.Null(responseI.newPage);
             }
 
-            var (rightPage, pivot, writeResultO) = leftPage.Write(maxKey / 2 - 1, maxKey / 2 - 1);
-            Assert.Equal(WriteResult.Inserted, writeResultO);
-            Assert.NotNull(rightPage);
-            Assert.Equal(10, pivot);
+            Assert.True(leftPage.TryWrite(maxKey / 2 - 1, maxKey / 2 - 1, out var responseO));
+            Assert.Equal(WriteResult.Inserted, responseO.result);
+            Assert.NotNull(responseO.newPage);
+            Assert.Equal(10, responseO.newPivotKey);
             Assert.Equal(6, leftPage.Count);
-            Assert.Equal(5, rightPage.Count);
+            Assert.Equal(5, responseO.newPage.Count);
 
             Assert.Equal(8, leftPage.Keys[4]);
             Assert.Equal(9, leftPage.Keys[5]);
 
-            Assert.Equal(pivot, rightPage.Keys[0]);
+            Assert.Equal(responseO.newPivotKey, responseO.newPage.MinKey);
         }
 
         [Fact]
         public void SplitSetsNewPagePivotKey()
         {
-            var leftPage = new LeafPage<int, int>(this.pageSize);
+            using var leftPage = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize * 2; i += 2)
             {
-                var (newPage, _, _) = leftPage.Write(i, i);
-                Assert.Null(newPage);
+                Assert.True(leftPage.TryWrite(i, i, out var response));
+                Assert.Null(response.newPage);
             }
 
             var key = 9;
-            var (rightPage, pivot, _) = leftPage.Write(key, key);
-            Assert.NotNull(rightPage);
-            Assert.Equal(10, pivot);
+            Assert.True(leftPage.TryWrite(key, key, out var rightPageResponse));
+            Assert.NotNull(rightPageResponse.newPage);
+            Assert.Equal(10, rightPageResponse.newPivotKey);
             Assert.Equal(6, leftPage.Count);
-            Assert.Equal(5, rightPage.Count);
+            Assert.Equal(5, rightPageResponse.newPage.Count);
 
-            Assert.Equal(rightPage.MinKey, rightPage.PivotKey);
+            Assert.Equal(rightPageResponse.newPage.MinKey, rightPageResponse.newPage.PivotKey);
         }
 
         [Fact]
         public void SplitSetsNewPagePivotKeyWithRightOnlyInsert()
         {
-            var leftPage = new LeafPage<int, int>(this.pageSize);
+            using var leftPage = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < leftPage.Size; ++i)
             {
-                var (newPage, _, _) = leftPage.Write(i, i);
-                Assert.Null(newPage);
+                Assert.True(leftPage.TryWrite(i, i, out var response));
+                Assert.Null(response.newPage);
             }
 
-            var (rightPage, pivot, _) = leftPage.Write(this.pageSize, this.pageSize);
-            Assert.NotNull(rightPage);
-            Assert.Equal(10, pivot);
+            Assert.True(leftPage.TryWrite(this.pageSize, this.pageSize, out var rightPageResponse));
+            Assert.NotNull(rightPageResponse.newPage);
+            Assert.Equal(10, rightPageResponse.newPivotKey);
             Assert.Equal(10, leftPage.Count);
-            Assert.Equal(1, rightPage.Count);
+            Assert.Equal(1, rightPageResponse.newPage.Count);
 
             for (var i = 0; i < leftPage.Count; ++i)
             {
                 Assert.Equal(i, leftPage.Keys[i]);
             }
 
-            Assert.Equal(rightPage.MinKey, rightPage.PivotKey);
+            Assert.Equal(rightPageResponse.newPage.MinKey, rightPageResponse.newPage.PivotKey);
         }
 
         [Fact]
         public void TryDeleteReturnsFalseWhenKeyNotFound()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = page.Write(i, i);
+                Assert.True(page.TryWrite(i, i, out _));
             }
 
             var deleted = page.TryDelete(this.pageSize, out _);
@@ -204,10 +205,10 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteReturnsTrueWhenKeyFound()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = page.Write(i, i);
+                Assert.True(page.TryWrite(i, i, out _));
             }
 
             var deleted = page.TryDelete(this.pageSize / 2, out _);
@@ -217,10 +218,10 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteRemovesKeyAndChild()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = page.Write(i, i);
+                Assert.True(page.TryWrite(i, i, out _));
             }
 
             _ = page.TryDelete(this.pageSize / 2, out _);
@@ -232,10 +233,10 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteUpdatesCount()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = page.Write(i, i);
+                Assert.True(page.TryWrite(i, i, out _));
             }
 
             _ = page.TryDelete(this.pageSize / 2, out _);
@@ -245,10 +246,10 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteDoesNotMergeWhenCountGTKDiv2()
         {
-            var page = new LeafPage<int, int>(this.pageSize);
+            using var page = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = page.Write(i, i);
+                Assert.True(page.TryWrite(i, i, out _));
             }
 
             _ = page.TryDelete(this.pageSize / 2, out var mergeInfo);
@@ -258,22 +259,22 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteMergesWhenCountLTKDiv2()
         {
-            var leftSibling = new LeafPage<int, int>(this.pageSize);
+            using var leftSibling = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < 3; ++i)
             {
-                _ = leftSibling.Write(i, i);
+                Assert.True(leftSibling.TryWrite(i, i, out _));
             }
 
-            var page = new LeafPage<int, int>(this.pageSize, leftSibling);
+            using var page = new LeafPage<int, int>(this.pageSize, leftSibling);
             for (var i = 4; i < 4 + 3; ++i)
             {
-                _ = page.Write(i, i);
+                Assert.True(page.TryWrite(i, i, out _));
             }
 
-            var rightSibling = new LeafPage<int, int>(this.pageSize, page);
+            using var rightSibling = new LeafPage<int, int>(this.pageSize, page);
             for (var i = 8; i < 8 + 3; ++i)
             {
-                _ = rightSibling.Write(i, i);
+                Assert.True(rightSibling.TryWrite(i, i, out _));
             }
 
             Assert.Equal(3, page.Count);
@@ -286,10 +287,10 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteMergesLeftWhenCountLTKDiv2AndPreferredChoiceIsCurrentPage()
         {
-            var leftSibling = new LeafPage<int, int>(this.pageSize);
+            using var leftSibling = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = leftSibling.Write(i, i);
+                Assert.True(leftSibling.TryWrite(i, i, out _));
             }
 
             var (page, pivotKey) = leftSibling.Split();
@@ -305,11 +306,11 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteMergesRightWhenCountLTKDiv2AndPreferredChoiceIsRightSibling()
         {
-            var leftPage = new LeafPage<int, int>(this.pageSize);
+            using var leftPage = new LeafPage<int, int>(this.pageSize);
             var count = this.pageSize * 10;
             for (var i = 0; i < count; i += 10)
             {
-                _ = leftPage.Write(i, i);
+                Assert.True(leftPage.TryWrite(i, i, out _));
             }
 
             var (middlePage, middlePivotKey) = leftPage.Split();
@@ -319,9 +320,9 @@ namespace BTrees.Tests
 
             for (var i = 61; i < 69; ++i)
             {
-                var (newPage, _, result) = middlePage.Write(i, i);
-                Assert.Null(newPage);
-                Assert.Equal(WriteResult.Inserted, result);
+                Assert.True(middlePage.TryWrite(i, i, out var response));
+                Assert.Null(response.newPage);
+                Assert.Equal(WriteResult.Inserted, response.result);
             }
 
             var deleted = rightPage.TryDelete(rightPage.PivotKey, out var mergeInfo1);
@@ -343,10 +344,10 @@ namespace BTrees.Tests
         public void TryDeleteDoesntMergeWhenNoMergeCandidate()
         {
             // 1. fill a page
-            var leftSibling = new LeafPage<int, int>(this.pageSize);
+            using var leftSibling = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = leftSibling.Write(i, i);
+                Assert.True(leftSibling.TryWrite(i, i, out _));
             }
 
             // 2. split it and then split the result so middle and right pages are both in underflow state
@@ -358,9 +359,9 @@ namespace BTrees.Tests
             var max = middlePage.MaxKey;
             for (var i = max + 1; i < max + 1 + insertCount; ++i)
             {
-                var (newPage, _, result) = middlePage.Write(i, i);
-                Assert.Null(newPage);
-                Assert.Equal(WriteResult.Inserted, result);
+                Assert.True(middlePage.TryWrite(i, i, out var response));
+                Assert.Null(response.newPage);
+                Assert.Equal(WriteResult.Inserted, response.result);
             }
 
             // 4. delete an item from the right sibling in an unmergable condition
@@ -371,10 +372,10 @@ namespace BTrees.Tests
         [Fact]
         public void TryDeleteMergeInfoReturnsRightPivotKeyWhenLeftMostPage()
         {
-            var leftPage = new LeafPage<int, int>(this.pageSize);
+            using var leftPage = new LeafPage<int, int>(this.pageSize);
             for (var i = 0; i < this.pageSize; ++i)
             {
-                _ = leftPage.Write(i, i);
+                Assert.True(leftPage.TryWrite(i, i, out _));
             }
 
             var (rightPage, _) = leftPage.Split();

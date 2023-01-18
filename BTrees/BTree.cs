@@ -7,8 +7,11 @@ namespace BTrees
     [DebuggerDisplay("{Count}")]
     internal class BTree<TKey, TValue>
         : IBTree<TKey, TValue>
+        , IDisposable
         where TKey : IComparable<TKey>
     {
+        private bool disposed;
+
         public long Count { get; private set; }
 
         public int Height { get; private set; } = 1;
@@ -39,7 +42,9 @@ namespace BTrees
 
                     if (rootPage.IsEmpty)
                     {
+                        var root = this.root;
                         this.root = rootPage.subtrees[0];
+                        root.Dispose();
                         --this.Height;
                     }
                 }
@@ -48,26 +53,30 @@ namespace BTrees
             return deleted;
         }
 
-        public void Write(TKey key, TValue value)
+        public bool TryWrite(TKey key, TValue value)
         {
-            var (newSubPage, newPivotKey, writeResult) = this.root.Write(key, value);
-            if (newSubPage is not null)
+            var writeSucceeded = this.root.TryWrite(key, value, out var response);
+            if (response.newPage is not null)
             {
+#pragma warning disable IDISP003 // Dispose previous before re-assigning
 #pragma warning disable CS8604 // Possible null reference argument.
                 this.root = new PivotPage<TKey, TValue>(
                     this.pageSize,
                     this.root,
-                    newSubPage,
-                    newPivotKey);
+                    response.newPage,
+                    response.newPivotKey);
 #pragma warning restore CS8604 // Possible null reference argument.
+#pragma warning restore IDISP003 // Dispose previous before re-assigning
 
                 ++this.Height;
             }
 
-            if (writeResult == WriteResult.Inserted)
+            if (response.result == WriteResult.Inserted)
             {
                 ++this.Count;
             }
+
+            return writeSucceeded;
         }
 
         public bool TryRead(TKey key, out TValue? value)
@@ -93,6 +102,26 @@ namespace BTrees
         public bool TryUpdate(TKey key, TValue value)
         {
             throw new NotImplementedException();
+        }
+
+        public virtual void Dispose()
+        {
+            if (this.disposed)
+            {
+                return;
+            }
+
+            this.root.Dispose();
+
+            this.disposed = true;
+        }
+
+        protected virtual void ThrowIfDisposed()
+        {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
         }
     }
 }

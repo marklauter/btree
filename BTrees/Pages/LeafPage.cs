@@ -106,11 +106,16 @@ namespace BTrees.Pages
             return this.RemoveKey(key, out mergeInfo);
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) Write(TKey key, TValue value)
+        public override bool TryWrite(TKey key, TValue value, out (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) response)
         {
+            WriteResult writeResult;
+            bool writeSucceeded;
+
             if (!this.IsOverflow)
             {
-                return (null, default, this.WriteInternal(key, value));
+                writeSucceeded = this.TryWriteInternal(key, value, out writeResult);
+                response = (null, default, writeResult);
+                return writeSucceeded;
             }
 
             var count = this.Count;
@@ -131,19 +136,21 @@ namespace BTrees.Pages
                     : this;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            return (newPage, newPivotKey, destinationPage.WriteInternal(key, value));
+            writeSucceeded = destinationPage.TryWriteInternal(key, value, out writeResult);
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
+            response = (newPage, newPivotKey, writeResult);
+            return writeSucceeded;
         }
 
-        private WriteResult WriteInternal(TKey key, TValue value)
+        private bool TryWriteInternal(TKey key, TValue value, out WriteResult writeResult)
         {
             if (this.IsEmpty)
             {
                 this.Keys[0] = key;
                 this.values[0] = value;
                 ++this.Count;
-
-                return WriteResult.Inserted;
+                writeResult = WriteResult.Inserted;
+                return true;
             }
 
             var index = this.IndexOfKey(key);
@@ -153,7 +160,7 @@ namespace BTrees.Pages
                     ? ~index
                     : index;
 
-            var writeResult = keyNotFound
+            writeResult = keyNotFound
                 ? WriteResult.Inserted
                 : WriteResult.Updated;
 
@@ -170,7 +177,7 @@ namespace BTrees.Pages
                 ++this.Count;
             }
 
-            return writeResult;
+            return true;
         }
 
         public override bool TryRead(TKey key, out TValue? value)

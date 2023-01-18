@@ -4,8 +4,11 @@ namespace BTrees.Pages
 {
     [DebuggerDisplay("{Count}")]
     internal abstract class Page<TKey, TValue>
+        : IDisposable
         where TKey : IComparable<TKey>
     {
+        private bool disposed;
+
         internal TKey[] Keys { get; }
 
         public int Count { get; protected set; }
@@ -20,6 +23,7 @@ namespace BTrees.Pages
         public TKey? PivotKey { get; protected set; }
         public abstract int Order { get; }
 
+        private readonly SemaphoreSlim gate = new(1);
 
         #region CTOR
         public Page(int size)
@@ -37,6 +41,16 @@ namespace BTrees.Pages
             leftSibling.RightSibling = this;
         }
         #endregion
+
+        protected Task<bool> TryAquireLockAsync(TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            return this.gate.WaitAsync(timeout, cancellationToken);
+        }
+
+        protected void ReleaseLock()
+        {
+            _ = this.gate.Release();
+        }
 
         protected abstract void ShiftLeft(int index);
         protected abstract void ShiftRight(int index);
@@ -140,6 +154,7 @@ namespace BTrees.Pages
                     var destinationCandidate = candidates[i].Item2;
 
                     if (destinationCandidate is not null
+                        && sourceCandidate is not null
                         && destinationCandidate.CanMerge(sourceCandidate))
                     {
                         destinationCandidate.Merge(sourceCandidate);
@@ -162,8 +177,28 @@ namespace BTrees.Pages
         /// <returns>True if delete was successful.</returns>
         public abstract bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo);
 
-        public abstract (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) Write(TKey key, TValue value);
+        public abstract bool TryWrite(TKey key, TValue value, out (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) response);
 
         public abstract bool TryRead(TKey key, out TValue? value);
+
+        protected virtual void ThrowIfDisposed()
+        {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+        }
+
+        public virtual void Dispose()
+        {
+            if (this.disposed)
+            {
+                return;
+            }
+
+            this.gate.Dispose();
+
+            this.disposed = true;
+        }
     }
 }

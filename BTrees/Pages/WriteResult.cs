@@ -2,7 +2,8 @@
 {
     internal enum WriteResult
     {
-        Inserted,
-        Updated,
+        Undefined = 0,
+        Inserted = 1,
+        Updated = 2,
     }
 }

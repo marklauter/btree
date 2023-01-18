@@ -38,7 +38,7 @@ namespace BTrees.Pages
         }
         #endregion
 
-        private void WriteInternal(TKey key, Page<TKey, TValue> value)
+        private bool TryWriteInternal(TKey key, Page<TKey, TValue> value)
         {
             var index = this.IndexOfKey(key);
             var shiftRequired = index < 0;
@@ -55,6 +55,8 @@ namespace BTrees.Pages
             this.Keys[index] = key;
             this.subtrees[index + 1] = value;
             ++this.Count;
+
+            return true;
         }
 
         protected override void ShiftLeft(int index)
@@ -158,40 +160,57 @@ namespace BTrees.Pages
             return deleted;
         }
 
-        public override (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) Write(TKey key, TValue value)
+        public override bool TryWrite(TKey key, TValue value, out (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) response)
         {
             var page = this.SelectSubtree(key);
-            var (newSubTree, newSubTreePivotKey, result) = page.Write(key, value);
-            if (newSubTree is null)
+            if (page is null)
             {
-                return (null, default, result);
+                throw new KeyNotFoundException($"Key not found: {key}");
+            }
+
+            var writeSucceeded = page.TryWrite(key, value, out response);
+            if (response.newPage is null || !writeSucceeded)
+            {
+                return writeSucceeded;
             }
 
             if (!this.IsOverflow)
             {
 #pragma warning disable CS8604 // Possible null reference argument.
-                this.WriteInternal(newSubTreePivotKey, newSubTree);
+                writeSucceeded = this.TryWriteInternal(response.newPivotKey, response.newPage);
 #pragma warning restore CS8604 // Possible null reference argument.
-                return (null, default, result);
+                response = (null, default, response.result);
+                return writeSucceeded;
             }
 
             var (newPage, newPivotKey) = this.Split();
-
             var destinationPage = key.CompareTo(newPivotKey) >= 0
                 ? (PivotPage<TKey, TValue>)newPage
                 : this;
 
 #pragma warning disable CS8604 // Possible null reference argument.
-            destinationPage.WriteInternal(newSubTreePivotKey, newSubTree);
+            writeSucceeded = destinationPage.TryWriteInternal(response.newPivotKey, response.newPage);
 #pragma warning restore CS8604 // Possible null reference argument.
-
-            return (newPage, newPivotKey, result);
+            response = (newPage, newPivotKey, response.result);
+            return writeSucceeded;
         }
 
         public override bool TryRead(TKey key, out TValue? value)
         {
             var page = this.SelectSubtree(key);
             return page.TryRead(key, out value);
+        }
+
+        public override void Dispose()
+        {
+            var count = this.Count;
+            var subtrees = new Span<Page<TKey, TValue>>(this.subtrees, 0, count);
+            for (var i = 0; i < count; ++i)
+            {
+                subtrees[i]?.Dispose();
+            }
+
+            base.Dispose();
         }
     }
 }
