@@ -45,6 +45,11 @@ namespace BTrees.Pages
         public override TKey MinKey => this.Count != 0 ? this.keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
         public override TKey MaxKey => this.Count != 0 ? this.keys[^1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
 
+        public override int BinarySearch(TKey key)
+        {
+            return ImmutableArray.BinarySearch(this.keys, key);
+        }
+
         public override bool ContainsKey(TKey key)
         {
             return this.BinarySearch(key) >= 0;
@@ -67,11 +72,6 @@ namespace BTrees.Pages
                 this.Size,
                 this.keys,
                 this.values);
-        }
-
-        public override int BinarySearch(TKey key)
-        {
-            return ImmutableArray.BinarySearch(this.keys, key);
         }
 
         public override IPage<TKey, TValue> Insert(TKey key, TValue value)
@@ -97,7 +97,7 @@ namespace BTrees.Pages
                     : throw new InvalidOperationException($"{nameof(page)} was wrong type: {page.GetType().Name}. Expected {nameof(LeafPage<TKey, TValue>)}");
         }
 
-        public override (IPage<TKey, TValue> leftPage, IPage<TKey, TValue> rightPage) Split()
+        public override (IPage<TKey, TValue> leftPage, IPage<TKey, TValue> rightPage, TKey pivotKey) Split()
         {
             var middle = this.Count / 2;
 
@@ -109,7 +109,8 @@ namespace BTrees.Pages
                 new LeafPage<TKey, TValue>(
                     this.Size,
                     this.keys[middle..this.Count],
-                    this.values[middle..this.Count]));
+                    this.values[middle..this.Count]),
+                this.keys[middle]);
         }
 
         public override bool TryRead(TKey key, out TValue? value)

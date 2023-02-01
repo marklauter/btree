@@ -13,7 +13,7 @@
 
         IPage<TKey, TValue> Fork();
         IPage<TKey, TValue> Merge(IPage<TKey, TValue> page);
-        (IPage<TKey, TValue> leftPage, IPage<TKey, TValue> rightPage) Split();
+        (IPage<TKey, TValue> leftPage, IPage<TKey, TValue> rightPage, TKey pivotKey) Split();
         int BinarySearch(TKey key);
         bool ContainsKey(TKey key);
         IPage<TKey, TValue> Delete(TKey key);

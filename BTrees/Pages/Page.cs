@@ -36,7 +36,7 @@ namespace BTrees.Pages
         public abstract int BinarySearch(TKey key);
         public abstract IPage<TKey, TValue> Insert(TKey key, TValue value);
         public abstract IPage<TKey, TValue> Merge(IPage<TKey, TValue> page);
-        public abstract (IPage<TKey, TValue> leftPage, IPage<TKey, TValue> rightPage) Split();
+        public abstract (IPage<TKey, TValue> leftPage, IPage<TKey, TValue> rightPage, TKey pivotKey) Split();
         public abstract bool TryRead(TKey key, out TValue? value);
         public abstract IPage<TKey, TValue> Update(TKey key, TValue value);
     }

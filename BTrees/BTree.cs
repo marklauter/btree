@@ -43,7 +43,7 @@ namespace BTrees
                     if (rootPage.IsEmpty)
                     {
                         var root = this.root;
-                        this.root = rootPage.subtrees[0];
+                        this.root = rootPage.pages[0];
                         root.Dispose();
                         --this.Height;
                     }
