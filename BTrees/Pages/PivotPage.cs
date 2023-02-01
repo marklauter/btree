@@ -40,7 +40,7 @@ namespace BTrees.Pages
 
         private bool TryWriteInternal(TKey key, Page<TKey, TValue> value)
         {
-            var index = this.IndexOfKey(key);
+            var index = this.BinarySearch(key);
             var shiftRequired = index < 0;
             index = index > 0
                     ? index
@@ -101,7 +101,7 @@ namespace BTrees.Pages
 
         internal override Page<TKey, TValue> SelectSubtree(TKey key)
         {
-            var index = this.IndexOfKey(key);
+            var index = this.BinarySearch(key);
             index = index < 0
                 ? ~index
                 : index + 1;
@@ -160,39 +160,56 @@ namespace BTrees.Pages
             return deleted;
         }
 
-        public override bool TryWrite(TKey key, TValue value, out (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) response)
+        public override async Task<WriteResponse<TKey, TValue>> WriteAsync(
+            TKey key,
+            TValue value,
+            CancellationToken cancellationToken)
         {
-            var page = this.SelectSubtree(key);
-            if (page is null)
+            var lockAquired = await this.TryAquireLockAsync(this.LockTimeout, cancellationToken);
+            try
             {
-                throw new KeyNotFoundException($"Key not found: {key}");
-            }
+                var page = this.SelectSubtree(key);
 
-            var writeSucceeded = page.TryWrite(key, value, out response);
-            if (response.newPage is null || !writeSucceeded)
-            {
+                if (page is null)
+                {
+                    throw new KeyNotFoundException($"Subtree not found for key: {key}");
+                }
+
+                if (!page.IsOverflow)
+                {
+                    this.ReleaseLock();
+                    lockAquired = false;
+                }
+
+                var response = page.WriteAsync(key, value, cancellationToken);
+                if (response.newPage is null || !writeSucceeded)
+                {
+                    return writeSucceeded;
+                }
+
+                if (!this.IsOverflow)
+                {
+                    writeSucceeded = this.TryWriteInternal(response.newPivotKey, response.newPage);
+                    response = (null, default, response.result);
+                    return writeSucceeded;
+                }
+
+                var (newPage, newPivotKey) = this.Split();
+                var destinationPage = key.CompareTo(newPivotKey) >= 0
+                    ? (PivotPage<TKey, TValue>)newPage
+                    : this;
+
+                writeSucceeded = destinationPage.TryWriteInternal(response.newPivotKey, response.newPage);
+                response = (newPage, newPivotKey, response.result);
                 return writeSucceeded;
             }
-
-            if (!this.IsOverflow)
+            finally
             {
-#pragma warning disable CS8604 // Possible null reference argument.
-                writeSucceeded = this.TryWriteInternal(response.newPivotKey, response.newPage);
-#pragma warning restore CS8604 // Possible null reference argument.
-                response = (null, default, response.result);
-                return writeSucceeded;
+                if (lockAquired)
+                {
+                    this.ReleaseLock();
+                }
             }
-
-            var (newPage, newPivotKey) = this.Split();
-            var destinationPage = key.CompareTo(newPivotKey) >= 0
-                ? (PivotPage<TKey, TValue>)newPage
-                : this;
-
-#pragma warning disable CS8604 // Possible null reference argument.
-            writeSucceeded = destinationPage.TryWriteInternal(response.newPivotKey, response.newPage);
-#pragma warning restore CS8604 // Possible null reference argument.
-            response = (newPage, newPivotKey, response.result);
-            return writeSucceeded;
         }
 
         public override bool TryRead(TKey key, out TValue? value)
@@ -211,6 +228,11 @@ namespace BTrees.Pages
             }
 
             base.Dispose();
+        }
+
+        public override Task<bool> TryWriteAsync(TKey key, TValue value, out (Page<TKey, TValue>? newPage, TKey? newPivotKey, WriteResult result) response, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

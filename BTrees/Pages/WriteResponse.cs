@@ -18,10 +18,15 @@
     internal sealed class WriteResponse<TKey, TValue>
         where TKey : IComparable<TKey>
     {
+        public WriteResponse(WriteResult result)
+            : this(false, result)
+        {
+        }
+
         public WriteResponse(
             bool wasSplit,
             WriteResult result)
-            : this(wasSplit, null, null, result)
+            : this(wasSplit, result, null, null)
         {
         }
 
@@ -36,12 +41,11 @@
         {
         }
 
-
         internal WriteResponse(
             bool wasSplit,
+            WriteResult result,
             Page<TKey, TValue>? newLeftPage,
-            Page<TKey, TValue>? newRightPage,
-            WriteResult result)
+            Page<TKey, TValue>? newRightPage)
         {
             this.WasSplit = wasSplit;
             this.NewLeftPage = newLeftPage;
@@ -50,8 +54,8 @@
         }
 
         public bool WasSplit { get; }
+        public WriteResult Result { get; }
         public Page<TKey, TValue>? NewLeftPage { get; }
         public Page<TKey, TValue>? NewRightPage { get; }
-        public WriteResult Result { get; }
     }
 }

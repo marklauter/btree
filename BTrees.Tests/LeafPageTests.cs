@@ -75,22 +75,22 @@ namespace BTrees.Tests
             Assert.True(page.TryWrite(9, 9, out _));
             Assert.True(page.TryWrite(10, 10, out _)); // 11 goes to index 8
 
-            var index = page.IndexOfKey(3);
+            var index = page.BinarySearch(3);
             Assert.Equal(2, ~index);
 
-            index = page.IndexOfKey(4);
+            index = page.BinarySearch(4);
             Assert.Equal(2, index);
 
-            index = page.IndexOfKey(8);
+            index = page.BinarySearch(8);
             Assert.Equal(6, ~index);
 
-            index = page.IndexOfKey(0);
+            index = page.BinarySearch(0);
             Assert.Equal(0, ~index);
 
-            index = page.IndexOfKey(10);
+            index = page.BinarySearch(10);
             Assert.Equal(7, index);
 
-            index = page.IndexOfKey(11);
+            index = page.BinarySearch(11);
             Assert.Equal(8, ~index);
         }
 
