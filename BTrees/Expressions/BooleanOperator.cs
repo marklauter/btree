@@ -1,4 +1,4 @@
-﻿namespace BTrees
+﻿namespace BTrees.Expressions
 {
     public enum BooleanOperator
     {

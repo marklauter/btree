@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace BTrees.Tests
+namespace BTrees.Tests.Experiments
 {
     public class StreamTests
     {
@@ -13,7 +13,7 @@ namespace BTrees.Tests
             using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, true);
 
             var expected = new Data(1, 2);
-            writer.WriteStruct<Data>(expected);
+            writer.WriteStruct(expected);
 
             stream.Position = 0;
             var actual = reader.ReadStruct<Data>();

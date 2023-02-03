@@ -8,17 +8,29 @@ namespace BTrees.Pages
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
+        public static IPage<TKey, TValue> Empty(int size)
+        {
+            return new LeafPage<TKey, TValue>(size);
+        }
+
         private readonly ImmutableArray<TKey> keys;
         private readonly ImmutableArray<TValue> values;
 
-        public LeafPage(
-            int size,
-            TKey key,
-            TValue value)
+        //public LeafPage(
+        //    int size,
+        //    TKey key,
+        //    TValue value)
+        //    : base(size)
+        //{
+        //    this.keys = ImmutableArray.Create(key);
+        //    this.values = ImmutableArray.Create(value);
+        //}
+
+        private LeafPage(int size)
             : base(size)
         {
-            this.keys = ImmutableArray.Create(key);
-            this.values = ImmutableArray.Create(value);
+            this.keys = ImmutableArray<TKey>.Empty;
+            this.values = ImmutableArray<TValue>.Empty;
         }
 
         private LeafPage(

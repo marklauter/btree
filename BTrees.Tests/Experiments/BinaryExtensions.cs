@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace BTrees.Tests
+namespace BTrees.Tests.Experiments
 {
     public static class BinaryExtensions
     {
