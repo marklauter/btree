@@ -302,8 +302,13 @@ namespace BTrees.Tests
             }
 
             var (left, right, pivotKey) = page.Split();
+
             Assert.NotNull(left);
+            Assert.Equal(size / 2, left.Count);
+
             Assert.NotNull(right);
+            Assert.Equal(size / 2, right.Count);
+
             Assert.Equal(5, pivotKey);
         }
 
@@ -348,6 +353,44 @@ namespace BTrees.Tests
             for (var i = pivotKey; i < pivotKey + size / 2; ++i)
             {
                 Assert.False(left.ContainsKey(i));
+            }
+        }
+
+        [Fact]
+        public void Merge_Left_Contains_All_Keys()
+        {
+            var size = 10;
+            var page = LeafPage<int, int>.Empty(size);
+            for (var i = 0; i < size; ++i)
+            {
+                page = page.Insert(i, i);
+            }
+
+            var (left, right, _) = page.Split();
+            var mergedPage = left.Merge(right);
+
+            for (var i = 0; i < size; ++i)
+            {
+                Assert.True(mergedPage.ContainsKey(i));
+            }
+        }
+
+        [Fact]
+        public void Merge_Right_Contains_All_Keys()
+        {
+            var size = 10;
+            var page = LeafPage<int, int>.Empty(size);
+            for (var i = 0; i < size; ++i)
+            {
+                page = page.Insert(i, i);
+            }
+
+            var (left, right, _) = page.Split();
+            var mergedPage = right.Merge(left);
+
+            for (var i = 0; i < size; ++i)
+            {
+                Assert.True(mergedPage.ContainsKey(i));
             }
         }
     }

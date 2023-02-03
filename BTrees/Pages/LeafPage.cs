@@ -16,16 +16,6 @@ namespace BTrees.Pages
         private readonly ImmutableArray<TKey> keys;
         private readonly ImmutableArray<TValue> values;
 
-        //public LeafPage(
-        //    int size,
-        //    TKey key,
-        //    TValue value)
-        //    : base(size)
-        //{
-        //    this.keys = ImmutableArray.Create(key);
-        //    this.values = ImmutableArray.Create(value);
-        //}
-
         private LeafPage(int size)
             : base(size)
         {
@@ -41,16 +31,6 @@ namespace BTrees.Pages
         {
             this.keys = keys;
             this.values = values;
-        }
-
-        private LeafPage(
-            int size,
-            ReadOnlySpan<TKey> keys,
-            ReadOnlySpan<TValue> values)
-            : base(size)
-        {
-            this.keys = ImmutableArray.Create(keys);
-            this.values = ImmutableArray.Create(values);
         }
 
         public override int Count => this.keys.Length;
@@ -102,10 +82,12 @@ namespace BTrees.Pages
             return page is null
                 ? throw new ArgumentNullException(nameof(page))
                 : page is LeafPage<TKey, TValue> leafPage
-                    ? (IPage<TKey, TValue>)new LeafPage<TKey, TValue>(
-                        this.Size,
-                        this.keys.AddRange(leafPage.keys).Sort(),
-                        this.values.AddRange(leafPage.values).Sort())
+                    ? this.MaxKey.CompareTo(page.MinKey) <= 0
+                        ? new LeafPage<TKey, TValue>(
+                            this.Size,
+                            this.keys.AddRange(leafPage.keys),
+                            this.values.AddRange(leafPage.values))
+                        : page.Merge(this)
                     : throw new InvalidOperationException($"{nameof(page)} was wrong type: {page.GetType().Name}. Expected {nameof(LeafPage<TKey, TValue>)}");
         }
 
