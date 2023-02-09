@@ -5,7 +5,7 @@ namespace BTrees.Tests
     public sealed class LeafPageTests
     {
         [Fact]
-        public void EmptyPage_Has_CorrectSize()
+        public void EmptyPage_Has_Correct_Size()
         {
             var size = 10;
             var page = LeafPage<int, int>.Empty(size);
@@ -13,7 +13,7 @@ namespace BTrees.Tests
         }
 
         [Fact]
-        public void EmptyPage_Has_CorrectCount()
+        public void EmptyPage_Has_Correct_Count()
         {
             var size = 10;
             var page = LeafPage<int, int>.Empty(size);
@@ -21,7 +21,7 @@ namespace BTrees.Tests
         }
 
         [Fact]
-        public void EmptyPage_Has_IsEmpty()
+        public void EmptyPage_IsEmpty()
         {
             var size = 10;
             var page = LeafPage<int, int>.Empty(size);
@@ -34,7 +34,7 @@ namespace BTrees.Tests
             var size = 10;
             var page = LeafPage<int, int>.Empty(size);
             var newPage = page.Insert(1, 1);
-            Assert.NotEqual(page, newPage);
+            Assert.False(page == newPage);
         }
 
         [Fact]
@@ -194,7 +194,7 @@ namespace BTrees.Tests
             var page = LeafPage<int, object>.Empty(size);
             page = page.Insert(1, expectedValue);
             var fork = page.Fork();
-            Assert.NotEqual(page, fork);
+            Assert.False(page == fork); // have to use == instead of Assert.Equal because of implementing IComparable<IPage>
             Assert.True(fork.TryRead(1, out var actualValue));
             Assert.Equal(expectedValue, actualValue);
         }

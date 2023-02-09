@@ -3,8 +3,10 @@ using System.Diagnostics;
 
 namespace BTrees.Pages
 {
+    // todo: unqiue or not should be implmeneted with an injected strategy
+
     [DebuggerDisplay(nameof(LeafPage<TKey, TValue>))]
-    internal class LeafPage<TKey, TValue>
+    internal sealed class LeafPage<TKey, TValue>
         : Page<TKey, TValue>
         where TKey : IComparable<TKey>
     {
@@ -16,14 +18,7 @@ namespace BTrees.Pages
         private readonly ImmutableArray<TKey> keys;
         private readonly ImmutableArray<TValue> values;
 
-        private LeafPage(int size)
-            : base(size)
-        {
-            this.keys = ImmutableArray<TKey>.Empty;
-            this.values = ImmutableArray<TValue>.Empty;
-        }
-
-        private LeafPage(
+        public LeafPage(
             int size,
             ImmutableArray<TKey> keys,
             ImmutableArray<TValue> values)
@@ -31,6 +26,13 @@ namespace BTrees.Pages
         {
             this.keys = keys;
             this.values = values;
+        }
+
+        private LeafPage(int size)
+            : base(size)
+        {
+            this.keys = ImmutableArray<TKey>.Empty;
+            this.values = ImmutableArray<TValue>.Empty;
         }
 
         public override int Count => this.keys.Length;
@@ -82,7 +84,7 @@ namespace BTrees.Pages
             return page is null
                 ? throw new ArgumentNullException(nameof(page))
                 : page is LeafPage<TKey, TValue> leafPage
-                    ? this.MaxKey.CompareTo(page.MinKey) <= 0
+                    ? this.CompareTo(page) <= 0
                         ? new LeafPage<TKey, TValue>(
                             this.Size,
                             this.keys.AddRange(leafPage.keys),
@@ -129,191 +131,4 @@ namespace BTrees.Pages
                 : throw new KeyNotFoundException($"{key}");
         }
     }
-
-    //    [DebuggerDisplay("LeafPage {Count}")]
-    //    internal class LeafPage<TKey, TValue>
-    //        : Page<TKey, TValue>
-    //        where TKey : IComparable<TKey>
-    //    {
-    //        internal readonly List<TValue> values;
-
-    //        public override int Order => this.Size;
-
-    //        #region CTOR
-    //        public LeafPage(int size)
-    //            : base(size)
-    //        {
-    //            this.values = new List<TValue>(size);
-    //        }
-
-    //        internal LeafPage(
-    //            int size,
-    //            Page<TKey, TValue> leftSibling)
-    //            : base(
-    //                  size,
-    //                  leftSibling)
-    //        {
-    //            this.values = new List<TValue>(size);
-    //        }
-    //        #endregion
-
-    //        internal override void Merge(Page<TKey, TValue> sourcePage)
-    //        {
-    //            var startIndex = this.Count;
-    //            var endIndex = sourcePage.Count + startIndex;
-
-    //            var keys = new Span<TKey>(this.Keys);
-    //            var children = new Span<TValue>(this.values);
-
-    //            var sourceKeys = new Span<TKey>(sourcePage.Keys);
-    //            var sourceChildren = new Span<TValue>(((LeafPage<TKey, TValue>)sourcePage).values);
-
-    //            var j = 0;
-    //            for (var i = startIndex; i < endIndex; ++i)
-    //            {
-    //                keys[i] = sourceKeys[j];
-    //                children[i] = sourceChildren[j];
-    //                ++j;
-    //            }
-
-    //            this.Count = endIndex;
-    //        }
-
-    //        internal override Page<TKey, TValue> SelectSubtree(TKey key)
-    //        {
-    //            // this is the end of the traversal
-    //            return this;
-    //        }
-
-    //        internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
-    //        {
-    //            var newPage = new LeafPage<TKey, TValue>(this.Size, this);
-    //            var newKeys = new Span<TKey>(newPage.Keys);
-    //            var newChildren = new Span<TValue?>(newPage.values);
-
-    //            var keys = new Span<TKey>(this.Keys);
-    //            var children = new Span<TValue?>(this.values);
-
-    //            var count = this.Count;
-    //            var newPivotIndex = count / 2;
-    //            var j = 0;
-    //            for (var i = newPivotIndex; i < count; ++i)
-    //            {
-    //                newKeys[j] = keys[i];
-    //                newChildren[j] = children[i];
-    //                ++j;
-    //            }
-
-    //            newPage.PivotKey = newKeys[0];
-    //            newPage.Count = count - newPivotIndex;
-    //            this.Count = newPivotIndex;
-
-    //            return (newPage, newPage.PivotKey);
-    //        }
-
-    //        public override bool TryDelete(TKey key, out (bool merged, TKey? deprecatedPivotKey) mergeInfo)
-    //        {
-    //            return this.RemoveKey(key, out mergeInfo);
-    //        }
-
-    //        public override async Task<WriteResponse<TKey, TValue>> WriteAsync(
-    //            TKey key,
-    //            TValue value,
-    //            CancellationToken cancellationToken)
-    //        {
-    //            var lockAquired = await this.TryAquireLockAsync(this.LockTimeout, cancellationToken);
-    //            try
-    //            {
-    //                var writeResult = WriteResult.FailedToAquireLock;
-    //                if (!lockAquired)
-    //                {
-    //                    return new WriteResponse<TKey, TValue>(writeResult);
-    //                }
-
-    //                if (!this.IsOverflow)
-    //                {
-    //                    writeResult = this.WriteInternal(key, value);
-    //                    return new WriteResponse<TKey, TValue>(false, writeResult);
-    //                }
-
-    //                var count = this.Count;
-    //                var index = this.IndexOfKey(key);
-    //                var keyFound = index >= 0;
-    //                var rightOnly = ~index == count;
-
-    //                // split needs to create a new left page as well as a right page for copy on write - can't modify the current data
-    //                var (newPage, newPivotKey) = keyFound
-    //                    ? (null, default)
-    //                    : rightOnly
-    //                        ? (new LeafPage<TKey, TValue>(this.Size, this) { PivotKey = key }, key)
-    //                        : this.Split();
-
-    //                var destinationPage = keyFound
-    //                    ? this
-    //                    : rightOnly || key.CompareTo(newPivotKey) >= 0
-    //                        ? ((LeafPage<TKey, TValue>?)newPage)
-    //                        : this;
-
-    //#pragma warning disable CS8602 // Dereference of a possibly null reference.
-    //                writeResult = destinationPage.WriteInternal(key, value);
-    //#pragma warning restore CS8602 // Dereference of a possibly null reference.
-    //                return new WriteResponse<TKey, TValue>(true, writeResult, null, newPage);
-    //            }
-    //            finally
-    //            {
-    //                if (lockAquired)
-    //                {
-    //                    this.ReleaseLock();
-    //                }
-    //            }
-    //        }
-
-    //        private WriteResult WriteInternal(TKey key, TValue value)
-    //        {
-    //            if (this.IsEmpty)
-    //            {
-    //                this.Keys.Add(key);
-    //                this.values.Add(value);
-    //                return WriteResult.Inserted;
-    //            }
-
-    //            var index = this.Keys.BinarySearch(key);
-    //            var keyNotFound = index < 0;
-
-    //            index = keyNotFound
-    //                ? ~index
-    //                : index;
-
-    //            var writeResult = keyNotFound
-    //                ? WriteResult.Inserted
-    //                : WriteResult.Updated;
-
-    //            // todo: shift in-place will be replaced with page clone that skips a slot as part of copy-on-write updates
-    //            if (keyNotFound && index != this.Count)
-    //            {
-    //                this.Keys.Insert(index, key);
-    //                this.values.Insert(index, value);
-    //            }
-    //            else
-    //            {
-    //                this.Keys[index] = key;
-    //                this.values[index] = value;
-    //            }
-
-    //            return writeResult;
-    //        }
-
-    //        public override bool TryRead(TKey key, out TValue? value)
-    //        {
-    //            value = default;
-    //            var index = this.Keys.BinarySearch(key);
-    //            if (index < 0)
-    //            {
-    //                return false;
-    //            }
-
-    //            value = this.values[index];
-    //            return true;
-    //        }
-    //    }
 }
