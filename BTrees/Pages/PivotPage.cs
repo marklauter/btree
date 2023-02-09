@@ -11,7 +11,21 @@ namespace BTrees.Pages
         private readonly ImmutableArray<TKey> keys;
         private readonly ImmutableArray<IPage<TKey, TValue>> pages;
 
-        public PivotPage(
+        public static IPage<TKey, TValue> Create(int size,
+            IPage<TKey, TValue> leftPage,
+            IPage<TKey, TValue> rightPage)
+        {
+            return new PivotPage<TKey, TValue>(size, leftPage, rightPage);
+        }
+
+        public static IPage<TKey, TValue> Create(int size,
+            ImmutableArray<TKey> keys,
+            ImmutableArray<IPage<TKey, TValue>> pages)
+        {
+            return new PivotPage<TKey, TValue>(size, keys, pages);
+        }
+
+        private PivotPage(
             int size,
             IPage<TKey, TValue> leftPage,
             IPage<TKey, TValue> rightPage)
@@ -21,7 +35,7 @@ namespace BTrees.Pages
             this.pages = ImmutableArray.Create(leftPage, rightPage);
         }
 
-        public PivotPage(
+        private PivotPage(
             int size,
             ImmutableArray<TKey> keys,
             ImmutableArray<IPage<TKey, TValue>> pages)
@@ -32,8 +46,8 @@ namespace BTrees.Pages
         }
 
         public override int Count => this.keys.Length;
-        public override TKey MinKey => this.Count != 0 ? this.keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
-        public override TKey MaxKey => this.Count != 0 ? this.keys[^1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
+        public override TKey MinKey => this.Count != 0 ? this.pages[0].MinKey : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
+        public override TKey MaxKey => this.Count != 0 ? this.pages[^1].MaxKey : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
 
         public override int BinarySearch(TKey key)
         {
@@ -47,25 +61,59 @@ namespace BTrees.Pages
                 .ContainsKey(key);
         }
 
+        private PivotPage<TKey, TValue> MergeSubtree(int subTreeIndex, IPage<TKey, TValue> page)
+        {
+            var keys = this.keys;
+            var pages = this.pages;
+
+            if (subTreeIndex > 0)
+            {
+                page = this.pages[subTreeIndex - 1]
+                    .Merge(page);
+                keys = keys
+                    .RemoveAt(subTreeIndex - 1);
+                pages = pages
+                    .SetItem(subTreeIndex - 1, page)
+                    .RemoveAt(subTreeIndex);
+                --subTreeIndex;
+            }
+            else if (subTreeIndex < this.Count)
+            {
+                page = page
+                    .Merge(this.pages[subTreeIndex + 1]);
+                keys = keys
+                    .RemoveAt(subTreeIndex);
+                pages = pages
+                    .SetItem(subTreeIndex, page)
+                    .RemoveAt(subTreeIndex + 1);
+            }
+
+            var pivotPage = new PivotPage<TKey, TValue>(
+                this.Size,
+                keys,
+                pages);
+
+            if (page.IsOverflow)
+            {
+                pivotPage = pivotPage.SplitSubtree(subTreeIndex, page);
+            }
+
+            return pivotPage;
+        }
+
         public override IPage<TKey, TValue> Delete(TKey key)
         {
             var index = this.SubtreeIndex(key);
-            var page = this
+            var subtree = this
                 .pages[index]
                 .Delete(key);
 
-            if (page.IsUnderflow)
-            {
-                // todo: merge with left, right or both siblings?
-                throw new NotImplementedException();
-            }
-            else
-            {
-                return new PivotPage<TKey, TValue>(
+            return subtree.IsUnderflow
+                ? this.MergeSubtree(index, subtree)
+                : new PivotPage<TKey, TValue>(
                     this.Size,
                     this.keys,
-                    this.pages.SetItem(index, page));
-            }
+                    this.pages.SetItem(index, subtree));
         }
 
         public override IPage<TKey, TValue> Fork()
@@ -78,14 +126,14 @@ namespace BTrees.Pages
 
         private PivotPage<TKey, TValue> SplitSubtree(int subTreeIndex, IPage<TKey, TValue> page)
         {
-            var splitResult = page.Split();
+            var (leftPage, rightPage, pivotKey) = page.Split();
             return new PivotPage<TKey, TValue>(
                 this.Size,
                 this.keys
-                    .Insert(subTreeIndex, splitResult.pivotKey),
+                    .Insert(subTreeIndex, pivotKey),
                 this.pages
-                    .SetItem(subTreeIndex, splitResult.leftPage)
-                    .Insert(subTreeIndex + 1, splitResult.rightPage));
+                    .SetItem(subTreeIndex, leftPage)
+                    .Insert(subTreeIndex + 1, rightPage));
         }
 
         public override IPage<TKey, TValue> Insert(TKey key, TValue value)
@@ -105,8 +153,6 @@ namespace BTrees.Pages
 
         public override IPage<TKey, TValue> Merge(IPage<TKey, TValue> page)
         {
-            throw new NotImplementedException();
-
             if (page is null)
             {
                 throw new ArgumentNullException(nameof(page));
@@ -116,16 +162,17 @@ namespace BTrees.Pages
             {
                 if (this.CompareTo(page) <= 0)
                 {
-                    var mergedPages = this.pages.AddRange(pivotPage.pages);
-                    var mergedKeys = mergedPages
-                        .Take(mergedPages.Length - 1)
+                    var pages = this.pages.AddRange(pivotPage.pages);
+                    var keys = pages
+                        .Skip(1)
+                        .Take(pages.Length - 1)
                         .Select(page => page.MinKey)
                         .ToImmutableArray();
 
                     return new PivotPage<TKey, TValue>(
                         this.Size,
-                        mergedKeys,
-                        mergedPages);
+                        keys,
+                        pages);
                 }
 
                 return page.Merge(this);
@@ -147,7 +194,7 @@ namespace BTrees.Pages
                 new PivotPage<TKey, TValue>(
                     this.Size,
                     this.keys[rightPageStart..this.Count],
-                    this.pages[rightPageStart..this.Count]),
+                    this.pages[rightPageStart..(this.Count + 1)]),
                 this.keys[middle]);
         }
 
@@ -184,63 +231,4 @@ namespace BTrees.Pages
                 : index + 1;
         }
     }
-
-    //    [DebuggerDisplay("PivotPage {Count}")]
-    //    internal class PivotPage<TKey, TValue>
-    //        : Page<TKey, TValue>
-    //        where TKey : IComparable<TKey>
-    //    {
-
-
-    //        internal override void Merge(Page<TKey, TValue> sourcePage)
-    //        {
-    //            var startIndex = this.Count;
-    //            var endIndex = sourcePage.Count + startIndex;
-    //            var keys = new Span<TKey>(this.Keys);
-    //            var children = new Span<Page<TKey, TValue>>(this.subtrees);
-    //            var sourceKeys = new Span<TKey>(this.Keys);
-    //            var sourceChildren = new Span<Page<TKey, TValue>>(this.subtrees);
-
-    //            var j = 0;
-    //            for (var i = startIndex; i < endIndex; ++i)
-    //            {
-    //                keys[i] = sourceKeys[j];
-    //                children[i] = sourceChildren[j];
-    //                ++j;
-    //            }
-
-    //            children[endIndex] = sourceChildren[j];
-
-    //            this.Count = endIndex;
-    //        }
-
-    //        internal override (Page<TKey, TValue> newPage, TKey newPivotKey) Split()
-    //        {
-    //            var count = this.Count;
-    //            var newPivotIndex = count / 2;
-    //            var copyFromIndex = newPivotIndex + 1;
-
-    //            var newPageCount = count - copyFromIndex;
-    //            var subtreesLength = newPageCount + 1;
-    //            var keys = new Span<TKey>(this.Keys, copyFromIndex, newPageCount);
-    //            var subtrees = new Span<Page<TKey, TValue>?>(this.subtrees, copyFromIndex, subtreesLength);
-
-    //            var newPage = new PivotPage<TKey, TValue>(this.Size, this);
-    //            var newKeys = new Span<TKey>(newPage.Keys, 0, newPageCount);
-    //            var newSubtrees = new Span<Page<TKey, TValue>?>(newPage.subtrees, 0, newPageCount + 1);
-    //            newPage.Count = newPageCount;
-    //            newPage.PivotKey = this.Keys[newPivotIndex];
-
-    //            for (var i = 0; i < newPageCount; ++i)
-    //            {
-    //                newKeys[i] = keys[i];
-    //                newSubtrees[i] = subtrees[i];
-    //            }
-
-    //            newSubtrees[newPageCount] = subtrees[newPageCount];
-
-    //            this.Count = newPivotIndex;
-
-    //            return (newPage, newPage.PivotKey);
-    //        }
 }

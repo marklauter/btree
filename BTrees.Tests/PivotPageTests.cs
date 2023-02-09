@@ -15,8 +15,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
             Assert.Equal(size, pivotPage.Size);
         }
 
@@ -30,8 +30,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
             Assert.Equal(1, pivotPage.Count);
         }
 
@@ -45,8 +45,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
 
             var newPage = pivotPage.Insert(size + 1, size + 1);
             Assert.False(pivotPage == newPage);
@@ -62,8 +62,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
 
             var newPage = pivotPage.Insert(size + 1, size + 1);
             Assert.Equal(pivotPage.Count, newPage.Count);
@@ -79,11 +79,11 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            Assert.Equal(10, splitResult.leftPage.Count);
-            Assert.Equal(10, splitResult.rightPage.Count);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            Assert.Equal(10, leftPage.Count);
+            Assert.Equal(10, rightPage.Count);
 
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
 
             var newPage = pivotPage.Insert(size * 2, size * 2);
             Assert.Equal(pivotPage.Count + 1, newPage.Count);
@@ -99,8 +99,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
 
             var newPage = pivotPage.Insert(size, size);
 
@@ -120,8 +120,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
 
             var newPage = pivotPage.Insert(size, size);
 
@@ -142,8 +142,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
 
             var fork = pivotPage.Fork();
             Assert.False(pivotPage == fork);
@@ -165,8 +165,8 @@ namespace BTrees.Tests
                 leafPage = leafPage.Insert(i, i);
             }
 
-            var splitResult = leafPage.Split();
-            var pivotPage = new PivotPage<int, int>(size, splitResult.leftPage, splitResult.rightPage);
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(size, leftPage, rightPage);
 
             var deletedPage = pivotPage.Delete(5);
             Assert.False(deletedPage.ContainsKey(5));
@@ -183,107 +183,51 @@ namespace BTrees.Tests
                 var key = i * size;
                 var items = Enumerable.Range(key, size);
                 keys.Add(key);
-                pages.Add(new LeafPage<int, int>(size, items.ToImmutableArray(), items.ToImmutableArray()));
+                pages.Add(LeafPage<int, int>.Create(size, items.ToImmutableArray(), items.ToImmutableArray()));
             }
 
-            var pivotPage = new PivotPage<int, int>(
+            var pivotPage = PivotPage<int, int>.Create(
                 size,
                 keys.Skip(1).Take(keys.Count - 1).ToImmutableArray(),
                 pages.ToImmutableArray());
 
             Assert.Equal(size, pivotPage.Count);
 
-            var splitResult = pivotPage.Split();
+            var (leftPage, rightPage, pivotKey) = pivotPage.Split();
 
-            Assert.Equal(60, splitResult.pivotKey);
+            Assert.Equal(60, pivotKey);
 
-            Assert.Equal(size / 2, splitResult.leftPage.Count);
-            Assert.Equal(10, splitResult.leftPage.MinKey);
-            Assert.Equal(50, splitResult.leftPage.MaxKey);
+            Assert.Equal(size / 2, leftPage.Count);
+            Assert.Equal(0, leftPage.MinKey);
+            Assert.Equal(59, leftPage.MaxKey);
 
-            Assert.Equal(size / 2 - 1, splitResult.rightPage.Count);
-            Assert.Equal(70, splitResult.rightPage.MinKey);
-            Assert.Equal(100, splitResult.rightPage.MaxKey);
+            Assert.Equal(size / 2 - 1, rightPage.Count);
+            Assert.Equal(60, rightPage.MinKey);
+            Assert.Equal(109, rightPage.MaxKey);
+        }
+
+        [Fact]
+        public void Insert_Splits_Subtrees()
+        {
+            var size = 4;
+            var leafPage = LeafPage<int, int>.Empty(size);
+            for (var i = 0; i < size; ++i)
+            {
+                leafPage = leafPage.Insert(i, i);
+            }
+
+            var (leftPage, rightPage, _) = leafPage.Split();
+            var pivotPage = PivotPage<int, int>.Create(
+                size,
+                leftPage,
+                rightPage);
+
+            for (var i = size; i < size + 100; ++i)
+            {
+                pivotPage = pivotPage.Insert(i, i);
+            }
+
+            Assert.Equal(50, pivotPage.Count);
         }
     }
-
-
-    //public class PivotPageTests
-    //{
-    //    private readonly int pageSize = 10;
-
-    //    [Fact]
-    //    public void NewPageIsEmpty()
-    //    {
-    //        using var page = new PivotPage<int, int>(this.pageSize);
-    //        Assert.True(page.IsEmpty);
-    //    }
-
-    //    [Fact]
-    //    public void NewPageHasCorrectPageSize()
-    //    {
-    //        using var page = new PivotPage<int, int>(this.pageSize);
-    //        Assert.Equal(this.pageSize, page.Size);
-    //    }
-
-    //    [Fact]
-    //    public void InsertIncrememtsLeafNodeCount()
-    //    {
-    //        using var leftpage = new LeafPage<int, int>(this.pageSize);
-    //        using var rightpage = new LeafPage<int, int>(this.pageSize);
-
-    //        for (var i = 0; i < this.pageSize / 2; ++i)
-    //        {
-    //            Assert.True(leftpage.TryWrite(i, i, out _));
-    //        }
-
-    //        for (var i = this.pageSize + 1; i < this.pageSize + this.pageSize / 2; ++i)
-    //        {
-    //            Assert.True(rightpage.TryWrite(i, i, out _));
-    //        }
-
-    //        using var pivotPage = new PivotPage<int, int>(this.pageSize, leftpage, rightpage, rightpage.MinKey);
-    //        Assert.Equal(1, pivotPage.Count);
-
-    //        var expectedLeftCount = leftpage.Count + 1;
-    //        var expectedRightCount = rightpage.Count;
-    //        Assert.True(pivotPage.TryWrite(this.pageSize, this.pageSize, out _));
-
-    //        Assert.Equal(expectedLeftCount, leftpage.Count);
-    //        Assert.Equal(expectedRightCount, rightpage.Count);
-    //    }
-
-    //    [Fact]
-    //    public void PagesSplitOnInsertsCorrectly()
-    //    {
-    //        var pageSize = 4;
-    //        using var leftLeafPage = new LeafPage<int, int>(pageSize);
-    //        var index = 0;
-    //        for (var i = 0; i < pageSize; ++i)
-    //        {
-    //            Assert.True(leftLeafPage.TryWrite(index, index, out var response));
-    //            ++index;
-    //            Assert.Null(response.newPage);
-    //        }
-
-    //        Assert.True(leftLeafPage.TryWrite(index, index, out var rightLeafResponse));
-    //        ++index;
-    //        Assert.NotNull(rightLeafResponse.newPage);
-
-    //        using var leftPivotPage = new PivotPage<int, int>(pageSize, leftLeafPage, rightLeafResponse.newPage, rightLeafResponse.newPivotKey);
-    //        for (var i = 0; i < 15; ++i)
-    //        {
-    //            Assert.True(leftPivotPage.TryWrite(index, index, out var response));
-    //            ++index;
-    //            Assert.Null(response.newPage);
-    //        }
-
-    //        Assert.True(leftPivotPage.TryWrite(index, index, out var rightPivotResponse));
-    //        Assert.NotNull(rightPivotResponse.newPage);
-    //        Assert.Equal(2, leftPivotPage.Count);
-    //        Assert.Equal(2, rightPivotResponse.newPage.Count);
-    //        Assert.Equal(12, rightPivotResponse.newPivotKey);
-    //        Assert.Equal(16, rightPivotResponse.newPage.MinKey);
-    //    }
-    //}
 }

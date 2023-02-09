@@ -6,11 +6,6 @@ namespace BTrees.Pages
     {
         private readonly int halfSize;
 
-        protected Page()
-        {
-            this.Size = 0;
-        }
-
         protected Page(int size)
         {
             if (size < 1)

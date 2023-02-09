@@ -15,10 +15,18 @@ namespace BTrees.Pages
             return new LeafPage<TKey, TValue>(size);
         }
 
+        public static IPage<TKey, TValue> Create(
+            int size,
+            ImmutableArray<TKey> keys,
+            ImmutableArray<TValue> values)
+        {
+            return new LeafPage<TKey, TValue>(size, keys, values);
+        }
+
         private readonly ImmutableArray<TKey> keys;
         private readonly ImmutableArray<TValue> values;
 
-        public LeafPage(
+        private LeafPage(
             int size,
             ImmutableArray<TKey> keys,
             ImmutableArray<TValue> values)
