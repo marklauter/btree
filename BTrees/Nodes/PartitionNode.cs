@@ -1,150 +1,169 @@
-﻿//using BTrees.Pages;
+﻿using BTrees.Pages;
 
-//namespace BTrees.Nodes
-//{
-//    internal sealed class PartitionNode<TKey, TValue>
-//        : Node<TKey, TValue>
-//        where TKey : IComparable<TKey>
-//    {
-//        public static INode<TKey, TValue> Create(
-//            int size,
-//            INode<TKey, TValue> leftNode,
-//            INode<TKey, TValue> rightNode)
-//        {
-//            return new PartitionNode<TKey, TValue>(size, leftNode, rightNode);
-//        }
+namespace BTrees.Nodes
+{
+    internal sealed class PartitionNode<TKey, TValue>
+        : INode<TKey, TValue>
+        where TKey : IComparable<TKey>
+    {
+        public static INode<TKey, TValue> Create(
+            int size,
+            INode<TKey, TValue> leftNode,
+            INode<TKey, TValue> rightNode)
+        {
+            return new PartitionNode<TKey, TValue>(size, leftNode, rightNode);
+        }
 
-//        private PartitionNode(
-//            int size,
-//            INode<TKey, TValue> leftNode,
-//            INode<TKey, TValue> rightNode)
-//        {
-//            this.page = PartitionPage<TKey, INode<TKey, TValue>>
-//                .Create(size, rightNode.MinKey, leftNode, rightNode);
-//        }
+        private PartitionNode(
+            int size,
+            INode<TKey, TValue> leftNode,
+            INode<TKey, TValue> rightNode)
+        {
+            this.page = PartitionPage<TKey, INode<TKey, TValue>>
+                .Create(size, rightNode.MinKey, leftNode, rightNode);
+        }
 
-//        private readonly object gate = new();
-//        private PartitionPage<TKey, INode<TKey, TValue>> page;
+        private PartitionNode(PartitionPage<TKey, INode<TKey, TValue>> page)
+        {
+            this.page = page ?? throw new ArgumentNullException(nameof(page));
+        }
 
-//        public override int Count => this.page.Count;
-//        public override bool IsEmpty => this.page.IsEmpty;
-//        public override bool IsFull => this.page.IsFull;
-//        public override bool IsOverflow => this.page.IsOverflow;
-//        public override bool IsUnderflow => this.page.IsUnderflow;
-//        public override TKey MinKey => this.page.MinKey;
-//        public override TKey MaxKey => this.page.MaxKey;
-//        public override int Size => this.page.Size;
+        private readonly object gate = new();
+        private PartitionPage<TKey, INode<TKey, TValue>> page;
 
-//        public override void Delete(TKey key)
-//        {
-//            // todo: switch to TryEnter and throw on fail
-//            Monitor.Enter(this.gate);
-//            try
-//            {
-//                var (subtree, index) = this
-//                    .page
-//                    .SelectSubtree(key);
+        public int Count => this.page.Count;
+        public bool IsEmpty => this.page.IsEmpty;
+        public bool IsFull => this.page.IsFull;
+        public bool IsOverflow => this.page.IsOverflow;
+        public bool IsUnderflow => this.page.IsUnderflow;
+        public TKey MinKey => this.page.MinKey;
+        public TKey MaxKey => this.page.MaxKey;
+        public int Size => this.page.Size;
 
-//                if (!subtree.IsUnderflow)
-//                {
-//                    Monitor.Exit(this.gate);
-//                }
+        private void TryLock()
+        {
+            if (!Monitor.TryEnter(this.gate, 1000))
+            {
+                throw new LockFailedException();
+            }
+        }
 
-//                subtree.Delete(key);
+        private void TryUnlock()
+        {
+            if (Monitor.IsEntered(this.gate))
+            {
+                Monitor.Exit(this.gate);
+            }
+        }
 
-//                // todo: handle underflow
-//            }
-//            finally
-//            {
-//                if (Monitor.IsEntered(this.gate))
-//                {
-//                    Monitor.Exit(this.gate);
-//                }
-//            }
-//        }
+        public INode<TKey, TValue> Merge(INode<TKey, TValue> node)
+        {
+            throw new NotImplementedException();
+        }
 
-//        public override void Insert(TKey key, TValue value)
-//        {
-//            // todo: switch to TryEnter and throw on fail
-//            Monitor.Enter(this.gate);
-//            try
-//            {
-//                var (subtree, index) = this
-//                    .page
-//                    .SelectSubtree(key);
+        public void Delete(TKey key)
+        {
+            this.TryLock();
+            try
+            {
+                var (subtree, index) = this
+                    .page
+                    .SelectSubtree(key);
 
-//                if (!subtree.IsFull)
-//                {
-//                    Monitor.Exit(this.gate);
-//                }
+                if (!subtree.IsUnderflow)
+                {
+                    Monitor.Exit(this.gate);
+                }
 
-//                subtree.Insert(key, value);
+                subtree.Delete(key);
 
-//                if (subtree.IsOverflow)
-//                {
-//                    var (left, right, pivotKey) = subtree.Split();
+                // todo: handle underflow
+            }
+            finally
+            {
+                this.TryUnlock();
+            }
+        }
 
-//                    this.page = this.page
-//                        .Update(index, left)
-//                        .Insert(pivotKey, right);
-//                }
+        public void Insert(TKey key, TValue value)
+        {
+            this.TryLock();
+            try
+            {
+                var (subtree, index) = this
+                    .page
+                    .SelectSubtree(key);
 
-//                // todo: handle overflow
-//            }
-//            finally
-//            {
-//                if (Monitor.IsEntered(this.gate))
-//                {
-//                    Monitor.Exit(this.gate);
-//                }
-//            }
-//        }
+                if (!subtree.IsFull)
+                {
+                    Monitor.Exit(this.gate);
+                }
 
-//        public override INode<TKey, TValue> Merge(INode<TKey, TValue> node)
-//        {
-//            throw new NotImplementedException();
-//        }
+                subtree.Insert(key, value);
 
-//        public override (INode<TKey, TValue> left, INode<TKey, TValue> right, TKey pivotKey) Split()
-//        {
-//            throw new NotImplementedException();
-//        }
+                if (subtree.IsOverflow)
+                {
+                    this.page = this
+                        .SplitSubtree(index, subtree);
+                }
+            }
+            finally
+            {
+                this.TryUnlock();
+            }
+        }
 
-//        public override void Update(TKey key, TValue value)
-//        {
-//            // todo: switch to TryEnter and throw on fail
-//            Monitor.Enter(this.gate);
-//            try
-//            {
-//                var subtree = this.SelectSubtree(key);
-//                if (!subtree.IsFull)
-//                {
-//                    Monitor.Exit(this.gate);
-//                }
+        public PartitionPage<TKey, INode<TKey, TValue>> SplitSubtree(
+            int subtreeIndex,
+            INode<TKey, TValue> subtree)
+        {
+            var (leftNode, rightNode, pivotKey) = subtree
+                .Split();
 
-//                subtree.Update(key, value);
-//            }
-//            finally
-//            {
-//                if (Monitor.IsEntered(this.gate))
-//                {
-//                    Monitor.Exit(this.gate);
-//                }
-//            }
-//        }
+            return this.page.InsertSplitPages(
+                subtreeIndex,
+                leftNode,
+                rightNode,
+                pivotKey);
+        }
 
-//        public override bool ContainsKey(TKey key)
-//        {
-//            return this
-//                .SelectSubtree(key)
-//                .ContainsKey(key);
-//        }
+        public void Update(TKey key, TValue value)
+        {
+            var subtree = this.page.Read(key);
+            subtree.Update(key, value);
+        }
 
-//        public override bool TryRead(TKey key, out TValue? value)
-//        {
-//            return this
-//                .SelectSubtree(key)
-//                .TryRead(key, out value);
-//        }
-//    }
-//}
+        public bool ContainsKey(TKey key)
+        {
+            return this
+                .page
+                .Read(key)
+                .ContainsKey(key);
+        }
+
+        public bool TryRead(TKey key, out TValue? value)
+        {
+            return this
+                .page
+                .Read(key)
+                .TryRead(key, out value);
+        }
+
+        public int BinarySearch(TKey key)
+        {
+            return this.page.BinarySearch(key);
+        }
+
+        public (INode<TKey, TValue> left, INode<TKey, TValue> right, TKey pivotKey) Split()
+        {
+            var (leftPage, rightPage, pivotKey) = this
+                .page
+                .Split();
+
+            return (
+                new PartitionNode<TKey, TValue>(leftPage),
+                new PartitionNode<TKey, TValue>(rightPage),
+                pivotKey);
+        }
+    }
+}

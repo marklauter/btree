@@ -1,246 +1,214 @@
-﻿//using System.Collections.Immutable;
-//using System.Diagnostics;
+﻿using System.Collections.Immutable;
 
-//namespace BTrees.Pages
-//{
+namespace BTrees.Pages
+{
+    internal sealed class PartitionPage<TKey, TNode>
+        where TKey : IComparable<TKey>
+    {
+        private readonly int halfSize;
+        private readonly ImmutableArray<TKey> keys;
+        private readonly ImmutableArray<TNode> subtrees;
 
-//    [DebuggerDisplay(nameof(PartitionPage<TKey, TValue>))]
-//    internal sealed class PartitionPage<TKey, TValue>
-//        where TKey : IComparable<TKey>
-//    {
-//        private readonly int halfSize;
-//        private readonly ImmutableArray<TKey> keys;
-//        private readonly ImmutableArray<TValue> values;
+        public static PartitionPage<TKey, TNode> Create(
+            int size,
+            TKey pivotKey,
+            TNode left,
+            TNode right)
+        {
+            return new PartitionPage<TKey, TNode>(size, pivotKey, left, right);
+        }
 
-//        public static PartitionPage<TKey, TValue> Create(
-//            int size,
-//            TKey pivotKey,
-//            TValue left,
-//            TValue right)
-//        {
-//            return new PartitionPage<TKey, TValue>(size, pivotKey, left, right);
-//        }
+        private PartitionPage(
+            int size,
+            TKey pivotKey,
+            TNode left,
+            TNode right)
+            : this(
+                  size,
+                  ImmutableArray.Create(pivotKey),
+                  ImmutableArray.Create(left, right))
+        {
+        }
 
-//        private PartitionPage(
-//            int size,
-//            TKey pivotKey,
-//            TValue left,
-//            TValue right)
-//        {
-//            this.Size = size;
-//            this.keys = ImmutableArray.Create(pivotKey);
-//            this.values = ImmutableArray.Create(left, right);
-//        }
+        private PartitionPage(
+            int size,
+            ImmutableArray<TKey> keys,
+            ImmutableArray<TNode> values)
+        {
+            this.Size = size;
+            this.halfSize = size / 2;
+            this.keys = keys;
+            this.subtrees = values;
+        }
 
-//        //public static IPage<TKey, TValue> Create(int size,
-//        //    IPage<TKey, TValue> leftPage,
-//        //    IPage<TKey, TValue> rightPage)
-//        //{
-//        //    return new PartitionPage<TKey, TValue>(size, leftPage, rightPage);
-//        //}
+        public int Count => this.keys.Length;
+        public bool IsEmpty => this.Count == 0;
+        public bool IsFull => this.Count == this.Size;
+        public bool IsOverflow => this.Count > this.Size;
+        public bool IsUnderflow => this.Count < this.halfSize;
+        public TKey MinKey => this.Count != 0 ? this.keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
+        public TKey MaxKey => this.Count != 0 ? this.keys[^1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
+        public int Size { get; }
 
-//        //public static IPage<TKey, TValue> Create(int size,
-//        //    ImmutableArray<TKey> keys,
-//        //    ImmutableArray<IPage<TKey, TValue>> pages)
-//        //{
-//        //    return new PartitionPage<TKey, TValue>(size, keys, pages);
-//        //}
+        public int BinarySearch(TKey key)
+        {
+            return ImmutableArray.BinarySearch(this.keys, key);
+        }
 
-//        private PartitionPage(
-//            int size,
-//            ImmutableArray<TKey> keys,
-//            ImmutableArray<TValue> values)
-//        {
-//            this.Size = size;
-//            this.halfSize = size / 2;
-//            this.keys = keys;
-//            this.values = values;
-//        }
+        //private PartitionPage<TKey, TValue> MergeSubtree(int subTreeIndex, IPage<TKey, TValue> page)
+        //{
+        //    var keys = this.keys;
+        //    var pages = this.values;
 
-//        public int Count => this.keys.Length;
-//        public bool IsEmpty => this.Count == 0;
-//        public bool IsFull => this.Count == this.Size;
-//        public bool IsOverflow => this.Count > this.Size;
-//        public bool IsUnderflow => this.Count < this.halfSize;
-//        public TKey MinKey => this.Count != 0 ? this.keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
-//        public TKey MaxKey => this.Count != 0 ? this.keys[^1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
-//        public int Size { get; }
+        //    if (subTreeIndex > 0)
+        //    {
+        //        page = this.values[subTreeIndex - 1]
+        //            .Merge(page);
+        //        keys = keys
+        //            .RemoveAt(subTreeIndex - 1);
+        //        pages = pages
+        //            .SetItem(subTreeIndex - 1, (TValue)page)
+        //            .RemoveAt(subTreeIndex);
+        //        --subTreeIndex;
+        //    }
+        //    else if (subTreeIndex < this.Count)
+        //    {
+        //        page = page
+        //            .Merge((IPage<TKey, TValue>)this.values[subTreeIndex + 1]);
+        //        keys = keys
+        //            .RemoveAt(subTreeIndex);
+        //        pages = pages
+        //            .SetItem(subTreeIndex, (TValue)page)
+        //            .RemoveAt(subTreeIndex + 1);
+        //    }
 
-//        public int BinarySearch(TKey key)
-//        {
-//            return ImmutableArray.BinarySearch(this.keys, key);
-//        }
+        //    var pivotPage = new PartitionPage<TKey, TValue>(
+        //        this.Size,
+        //        keys,
+        //        pages);
 
-//        public bool ContainsKey(TKey key)
-//        {
-//            throw new NotImplementedException();
-//            //return this
-//            //    .SelectSubtree(key)
-//            //    .ContainsKey(key);
-//        }
+        //    if (page.IsOverflow)
+        //    {
+        //        pivotPage = pivotPage.SplitSubtree(subTreeIndex, page);
+        //    }
 
-//        //private PartitionPage<TKey, TValue> MergeSubtree(int subTreeIndex, IPage<TKey, TValue> page)
-//        //{
-//        //    var keys = this.keys;
-//        //    var pages = this.values;
+        //    return pivotPage;
+        //}
 
-//        //    if (subTreeIndex > 0)
-//        //    {
-//        //        page = this.values[subTreeIndex - 1]
-//        //            .Merge(page);
-//        //        keys = keys
-//        //            .RemoveAt(subTreeIndex - 1);
-//        //        pages = pages
-//        //            .SetItem(subTreeIndex - 1, (TValue)page)
-//        //            .RemoveAt(subTreeIndex);
-//        //        --subTreeIndex;
-//        //    }
-//        //    else if (subTreeIndex < this.Count)
-//        //    {
-//        //        page = page
-//        //            .Merge((IPage<TKey, TValue>)this.values[subTreeIndex + 1]);
-//        //        keys = keys
-//        //            .RemoveAt(subTreeIndex);
-//        //        pages = pages
-//        //            .SetItem(subTreeIndex, (TValue)page)
-//        //            .RemoveAt(subTreeIndex + 1);
-//        //    }
+        public PartitionPage<TKey, TNode> Delete(TKey key)
+        {
+            throw new NotImplementedException();
+            //var index = this.SubtreeIndex(key);
+            //var subtree = this
+            //    .values[index]
+            //    .Delete(key);
 
-//        //    var pivotPage = new PartitionPage<TKey, TValue>(
-//        //        this.Size,
-//        //        keys,
-//        //        pages);
+            //return subtree.IsUnderflow
+            //    ? this.MergeSubtree(index, subtree)
+            //    : new PartitionPage<TKey, TValue>(
+            //        this.Size,
+            //        this.keys,
+            //        this.values.SetItem(index, subtree));
+        }
 
-//        //    if (page.IsOverflow)
-//        //    {
-//        //        pivotPage = pivotPage.SplitSubtree(subTreeIndex, page);
-//        //    }
+        public PartitionPage<TKey, TNode> InsertSplitPages(
+            int index,
+            TNode leftNode,
+            TNode rightNode,
+            TKey pivotKey)
+        {
+            return new PartitionPage<TKey, TNode>(
+                this.Size,
+                this.keys
+                    .SetItem(index, pivotKey),
+                this.subtrees
+                    .SetItem(index, leftNode)
+                    .Insert(index + 1, rightNode));
+        }
 
-//        //    return pivotPage;
-//        //}
+        public PartitionPage<TKey, TNode> Merge(PartitionPage<TKey, TNode> page)
+        {
+            throw new NotImplementedException();
+            //if (page is null)
+            //{
+            //    throw new ArgumentNullException(nameof(page));
+            //}
 
-//        public PartitionPage<TKey, TValue> Delete(TKey key)
-//        {
-//            var index = this.SubtreeIndex(key);
-//            var subtree = this
-//                .values[index]
-//                .Delete(key);
+            //if (page is PartitionPage<TKey, TValue> pivotPage)
+            //{
+            //    if (this.CompareTo(page) <= 0)
+            //    {
+            //        var pages = this.values.AddRange(pivotPage.values);
+            //        var keys = pages
+            //            .Skip(1)
+            //            .Take(pages.Length - 1)
+            //            .Select(page => page.MinKey)
+            //            .ToImmutableArray();
 
-//            return subtree.IsUnderflow
-//                ? this.MergeSubtree(index, subtree)
-//                : new PartitionPage<TKey, TValue>(
-//                    this.Size,
-//                    this.keys,
-//                    this.values.SetItem(index, subtree));
-//        }
+            //        return new PartitionPage<TKey, TValue>(
+            //            this.Size,
+            //            keys,
+            //            pages);
+            //    }
 
-//        public PartitionPage<TKey, TValue> Fork()
-//        {
-//            return new PartitionPage<TKey, TValue>(
-//                this.Size,
-//                this.keys,
-//                this.values);
-//        }
+            //    return page.Merge(this);
+            //}
 
-//        //private PartitionPage<TKey, TValue> SplitSubtree(int subTreeIndex, IPage<TKey, TValue> page)
-//        //{
-//        //    var (leftPage, rightPage, pivotKey) = page.Split();
-//        //    return new PartitionPage<TKey, TValue>(
-//        //        this.Size,
-//        //        this.keys
-//        //            .Insert(subTreeIndex, pivotKey),
-//        //        this.values
-//        //            .SetItem(subTreeIndex, (TValue)leftPage)
-//        //            .Insert(subTreeIndex + 1, (TValue)rightPage));
-//        //}
+            //throw new InvalidOperationException($"{nameof(page)} was wrong type: {page.GetType().Name}. Expected {nameof(PartitionPage<TKey, TValue>)}");
+        }
 
-//        public PartitionPage<TKey, TValue> Insert(TKey key, TValue value)
-//        {
-//            var index = this.SubtreeIndex(key);
-//            var subtree = this
-//                .values[index]
-//                .Insert(key, value);
+        public (PartitionPage<TKey, TNode> leftPage, PartitionPage<TKey, TNode> rightPage, TKey pivotKey) Split()
+        {
+            var middle = this.Count / 2;
+            var rightPageStart = middle + 1;
 
-//            return subtree.IsOverflow
-//                ? this.SplitSubtree(index, subtree)
-//                : new PartitionPage<TKey, TValue>(
-//                    this.Size,
-//                    this.keys,
-//                    this.values.SetItem(index, subtree));
-//        }
+            return (
+                new PartitionPage<TKey, TNode>(
+                    this.Size,
+                    this.keys[..middle],
+                    this.subtrees[..rightPageStart]),
+                new PartitionPage<TKey, TNode>(
+                    this.Size,
+                    this.keys[rightPageStart..this.Count],
+                    this.subtrees[rightPageStart..(this.Count + 1)]),
+                this.keys[middle]);
+        }
 
-//        public PartitionPage<TKey, TValue> Merge(PartitionPage<TKey, TValue> page)
-//        {
-//            if (page is null)
-//            {
-//                throw new ArgumentNullException(nameof(page));
-//            }
+        private int SubtreeIndex(TKey key)
+        {
+            var index = this.keys.BinarySearch(key);
+            return index < 0
+                ? ~index
+                : index + 1;
+        }
 
-//            if (page is PartitionPage<TKey, TValue> pivotPage)
-//            {
-//                if (this.CompareTo(page) <= 0)
-//                {
-//                    var pages = this.values.AddRange(pivotPage.values);
-//                    var keys = pages
-//                        .Skip(1)
-//                        .Take(pages.Length - 1)
-//                        .Select(page => page.MinKey)
-//                        .ToImmutableArray();
+        public (TNode value, int index) SelectSubtree(TKey key)
+        {
+            var index = this.SubtreeIndex(key);
+            return (this.subtrees[index], index);
+        }
 
-//                    return new PartitionPage<TKey, TValue>(
-//                        this.Size,
-//                        keys,
-//                        pages);
-//                }
+        public TNode Read(TKey key)
+        {
+            var index = this.SubtreeIndex(key);
+            return this.subtrees[index];
+        }
 
-//                return page.Merge(this);
-//            }
+        public PartitionPage<TKey, TNode> Insert(TKey key, TNode value)
+        {
+            var index = this.SubtreeIndex(key);
+            return new PartitionPage<TKey, TNode>(
+                    this.Size,
+                    this.keys.Insert(index, key),
+                    this.subtrees.Insert(index, value));
+        }
 
-//            throw new InvalidOperationException($"{nameof(page)} was wrong type: {page.GetType().Name}. Expected {nameof(PartitionPage<TKey, TValue>)}");
-//        }
-
-//        public (PartitionPage<TKey, TValue> leftPage, PartitionPage<TKey, TValue> rightPage, TKey pivotKey) Split()
-//        {
-//            var middle = this.Count / 2;
-//            var rightPageStart = middle + 1;
-
-//            return (
-//                new PartitionPage<TKey, TValue>(
-//                    this.Size,
-//                    this.keys[..middle],
-//                    this.values[..rightPageStart]),
-//                new PartitionPage<TKey, TValue>(
-//                    this.Size,
-//                    this.keys[rightPageStart..this.Count],
-//                    this.values[rightPageStart..(this.Count + 1)]),
-//                this.keys[middle]);
-//        }
-
-//        private int SubtreeIndex(TKey key)
-//        {
-//            var index = this.keys.BinarySearch(key);
-//            return index < 0
-//                ? ~index
-//                : index + 1;
-//        }
-
-//        public (TValue value, int index) SelectSubtree(TKey key)
-//        {
-//            var index = this.SubtreeIndex(key);
-//            return (this.values[index], index);
-//        }
-
-//        public TValue Read(TKey key)
-//        {
-//            return this.SelectSubtree(key);
-//        }
-
-//        public PartitionPage<TKey, TValue> Update(int index, TValue value)
-//        {
-//            return new PartitionPage<TKey, TValue>(
-//                this.Size,
-//                this.keys,
-//                this.values.SetItem(index, value));
-//        }
-//    }
-//}
+        public PartitionPage<TKey, TNode> Update(int index, TNode value)
+        {
+            return new PartitionPage<TKey, TNode>(
+                this.Size,
+                this.keys,
+                this.subtrees.SetItem(index, value));
+        }
+    }
+}
