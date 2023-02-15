@@ -1,9 +1,12 @@
-﻿using System.Collections.Immutable;
+﻿using BTrees.Nodes;
+using System.Collections.Immutable;
 
 namespace BTrees.Pages
 {
     internal sealed class PartitionPage<TKey, TNode>
+        : IComparable<PartitionPage<TKey, TNode>>
         where TKey : IComparable<TKey>
+        where TNode : INode<TKey>
     {
         private readonly int halfSize;
         private readonly ImmutableArray<TKey> keys;
@@ -128,33 +131,30 @@ namespace BTrees.Pages
 
         public PartitionPage<TKey, TNode> Merge(PartitionPage<TKey, TNode> page)
         {
-            throw new NotImplementedException();
-            //if (page is null)
-            //{
-            //    throw new ArgumentNullException(nameof(page));
-            //}
+            if (page is PartitionPage<TKey, TNode> pivotPage)
+            {
+                if (this.CompareTo(page) <= 0)
+                {
+                    var subtrees = this
+                        .subtrees
+                        .AddRange(pivotPage.subtrees);
 
-            //if (page is PartitionPage<TKey, TValue> pivotPage)
-            //{
-            //    if (this.CompareTo(page) <= 0)
-            //    {
-            //        var pages = this.values.AddRange(pivotPage.values);
-            //        var keys = pages
-            //            .Skip(1)
-            //            .Take(pages.Length - 1)
-            //            .Select(page => page.MinKey)
-            //            .ToImmutableArray();
+                    var keys = subtrees
+                        .Skip(1)
+                        .Take(subtrees.Length - 1)
+                        .Select(node => node.MinKey)
+                        .ToImmutableArray();
 
-            //        return new PartitionPage<TKey, TValue>(
-            //            this.Size,
-            //            keys,
-            //            pages);
-            //    }
+                    return new PartitionPage<TKey, TNode>(
+                        this.Size,
+                        keys,
+                        subtrees);
+                }
 
-            //    return page.Merge(this);
-            //}
+                return page.Merge(this);
+            }
 
-            //throw new InvalidOperationException($"{nameof(page)} was wrong type: {page.GetType().Name}. Expected {nameof(PartitionPage<TKey, TValue>)}");
+            throw new InvalidOperationException($"{nameof(page)} was wrong type: {page.GetType().Name}. Expected {nameof(PartitionPage<TKey, TNode>)}");
         }
 
         public (PartitionPage<TKey, TNode> leftPage, PartitionPage<TKey, TNode> rightPage, TKey pivotKey) Split()
@@ -209,6 +209,15 @@ namespace BTrees.Pages
                 this.Size,
                 this.keys,
                 this.subtrees.SetItem(index, value));
+        }
+
+        public int CompareTo(PartitionPage<TKey, TNode>? other)
+        {
+            return other is null
+                ? -1
+                : this == other
+                    ? 0
+                    : this.MinKey.CompareTo(other.MinKey);
         }
     }
 }

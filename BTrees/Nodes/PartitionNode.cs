@@ -58,7 +58,18 @@ namespace BTrees.Nodes
 
         public INode<TKey, TValue> Merge(INode<TKey, TValue> node)
         {
-            throw new NotImplementedException();
+            return node is null
+                ? throw new ArgumentNullException(nameof(node))
+                : node is PartitionNode<TKey, TValue> partitionNode
+                    ? (INode<TKey, TValue>)new PartitionNode<TKey, TValue>(this.page.Merge(partitionNode.page))
+                    : throw new InvalidOperationException($"{nameof(node)} was wrong type: {node.GetType().Name}. Expected {nameof(PartitionNode<TKey, TValue>)}");
+        }
+
+        private PartitionPage<TKey, INode<TKey, TValue>> MergeSubtree(
+            int subtreeIndex,
+            INode<TKey, TValue> subtree)
+        {
+
         }
 
         public void Delete(TKey key)
@@ -77,7 +88,22 @@ namespace BTrees.Nodes
 
                 subtree.Delete(key);
 
-                // todo: handle underflow
+                if (subtree.IsUnderflow)
+                {
+                    // todo: handle underflow
+                    if (index > 0) // subtree is not far left node
+                    {
+
+                    }
+                    else if (index < subtree.Count) // subtree still has at least one key and two values
+                    {
+
+                    }
+                    else // all keys are deleted and there is only one value remaining
+                    {
+
+                    }
+                }
             }
             finally
             {
@@ -113,7 +139,7 @@ namespace BTrees.Nodes
             }
         }
 
-        public PartitionPage<TKey, INode<TKey, TValue>> SplitSubtree(
+        private PartitionPage<TKey, INode<TKey, TValue>> SplitSubtree(
             int subtreeIndex,
             INode<TKey, TValue> subtree)
         {
