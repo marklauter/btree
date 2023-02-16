@@ -65,12 +65,37 @@ namespace BTrees.Nodes
                     : throw new InvalidOperationException($"{nameof(node)} was wrong type: {node.GetType().Name}. Expected {nameof(PartitionNode<TKey, TValue>)}");
         }
 
-        private PartitionPage<TKey, INode<TKey, TValue>> MergeSubtree(
-            int subtreeIndex,
-            INode<TKey, TValue> subtree)
-        {
+        //private (PartitionPage<TKey, INode<TKey, TValue>> page, INode<TKey, TValue> subtree) MergeSubtree(
+        //    int index,
+        //    INode<TKey, TValue> subtree)
+        //{
+        //    if (index > 0) // subtree is not far left node
+        //    {
+        //        // merge from right to left
+        //        subtree = this.page
+        //            .Subtree(index - 1)
+        //            .Merge(subtree);
 
-        }
+        //        return (
+        //            this.page.HandleLeftMerge(index, subtree),
+        //            subtree);
+        //    }
+        //    else if (index < subtree.Count) // subtree still has at least one key and two values
+        //    {
+        //        // merge from left to right
+        //        subtree = subtree
+        //            .Merge(this.page.Subtree(index + 1));
+
+        //        return (
+        //            this.page.HandleRightMerge(index, subtree),
+        //            subtree);
+        //    }
+        //    else // all keys are deleted and there is only one value remaining
+        //    {
+        //        // todo: pull the subtree up a level???
+        //        throw new NotImplementedException();
+        //    }
+        //}
 
         public void Delete(TKey key)
         {
@@ -81,28 +106,17 @@ namespace BTrees.Nodes
                     .page
                     .SelectSubtree(key);
 
-                if (!subtree.IsUnderflow)
+                if (subtree.Count > 1)
                 {
                     Monitor.Exit(this.gate);
                 }
 
                 subtree.Delete(key);
 
-                if (subtree.IsUnderflow)
+                if (subtree.IsEmpty)
                 {
-                    // todo: handle underflow
-                    if (index > 0) // subtree is not far left node
-                    {
-
-                    }
-                    else if (index < subtree.Count) // subtree still has at least one key and two values
-                    {
-
-                    }
-                    else // all keys are deleted and there is only one value remaining
-                    {
-
-                    }
+                    this.page = this.page
+                        .RemoveSubtree(index);
                 }
             }
             finally
@@ -146,7 +160,7 @@ namespace BTrees.Nodes
             var (leftNode, rightNode, pivotKey) = subtree
                 .Split();
 
-            return this.page.InsertSplitPages(
+            return this.page.WriteSplit(
                 subtreeIndex,
                 leftNode,
                 rightNode,
