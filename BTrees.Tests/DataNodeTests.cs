@@ -129,7 +129,7 @@ namespace BTrees.Tests
                 node.Insert(i, i);
             }
 
-            node.Delete(5);
+            node.TryDelete(5);
 
             Assert.Equal(size - 1, node.Count);
         }
@@ -144,7 +144,7 @@ namespace BTrees.Tests
                 node.Insert(i, i);
             }
 
-            node.Delete(5);
+            node.TryDelete(5);
 
             Assert.False(node.ContainsKey(5));
 

@@ -8,28 +8,30 @@ namespace BTrees.Nodes
     {
         public static INode<TKey, TValue> Create(
             int size,
-            INode<TKey, TValue> leftNode,
-            INode<TKey, TValue> rightNode)
+            INode<TKey, TValue> left,
+            INode<TKey, TValue> right)
         {
-            return new PartitionNode<TKey, TValue>(size, leftNode, rightNode);
+            return left is null ? throw new ArgumentNullException(nameof(left))
+                : right is null ? throw new ArgumentNullException(nameof(right))
+                : (INode<TKey, TValue>)new PartitionNode<TKey, TValue>(size, left, right);
         }
 
         private PartitionNode(
             int size,
-            INode<TKey, TValue> leftNode,
-            INode<TKey, TValue> rightNode)
+            INode<TKey, TValue> left,
+            INode<TKey, TValue> right)
         {
-            this.page = PartitionPage<TKey, INode<TKey, TValue>>
-                .Create(size, rightNode.MinKey, leftNode, rightNode);
+            this.page = PartitionPage<TKey, TValue>
+                .Create(size, right.MinKey, left, right);
         }
 
-        private PartitionNode(PartitionPage<TKey, INode<TKey, TValue>> page)
+        private PartitionNode(PartitionPage<TKey, TValue> page)
         {
             this.page = page ?? throw new ArgumentNullException(nameof(page));
         }
 
         private readonly object gate = new();
-        private PartitionPage<TKey, INode<TKey, TValue>> page;
+        private PartitionPage<TKey, TValue> page;
 
         public int Count => this.page.Count;
         public bool IsEmpty => this.page.IsEmpty;
@@ -40,6 +42,7 @@ namespace BTrees.Nodes
         public TKey MaxKey => this.page.MaxKey;
         public int Size => this.page.Size;
 
+        #region structure
         private void TryLock()
         {
             if (!Monitor.TryEnter(this.gate, 1000))
@@ -56,6 +59,23 @@ namespace BTrees.Nodes
             }
         }
 
+        public INode<TKey, TValue> Fork()
+        {
+            return new PartitionNode<TKey, TValue>(this.page);
+        }
+
+        public (INode<TKey, TValue> left, INode<TKey, TValue> right, TKey pivotKey) Split()
+        {
+            var (leftPage, rightPage, pivotKey) = this
+                .page
+                .Split();
+
+            return (
+                new PartitionNode<TKey, TValue>(leftPage),
+                new PartitionNode<TKey, TValue>(rightPage),
+                pivotKey);
+        }
+
         public INode<TKey, TValue> Merge(INode<TKey, TValue> node)
         {
             return node is null
@@ -64,6 +84,7 @@ namespace BTrees.Nodes
                     ? (INode<TKey, TValue>)new PartitionNode<TKey, TValue>(this.page.Merge(partitionNode.page))
                     : throw new InvalidOperationException($"{nameof(node)} was wrong type: {node.GetType().Name}. Expected {nameof(PartitionNode<TKey, TValue>)}");
         }
+        #endregion
 
         //private (PartitionPage<TKey, INode<TKey, TValue>> page, INode<TKey, TValue> subtree) MergeSubtree(
         //    int index,
@@ -97,80 +118,10 @@ namespace BTrees.Nodes
         //    }
         //}
 
-        public void Delete(TKey key)
+        #region reads
+        public int BinarySearch(TKey key)
         {
-            this.TryLock();
-            try
-            {
-                var (subtree, index) = this
-                    .page
-                    .SelectSubtree(key);
-
-                if (subtree.Count > 1)
-                {
-                    Monitor.Exit(this.gate);
-                }
-
-                subtree.Delete(key);
-
-                if (subtree.IsEmpty)
-                {
-                    this.page = this.page
-                        .RemoveSubtree(index);
-                }
-            }
-            finally
-            {
-                this.TryUnlock();
-            }
-        }
-
-        public void Insert(TKey key, TValue value)
-        {
-            this.TryLock();
-            try
-            {
-                var (subtree, index) = this
-                    .page
-                    .SelectSubtree(key);
-
-                if (!subtree.IsFull)
-                {
-                    Monitor.Exit(this.gate);
-                }
-
-                subtree.Insert(key, value);
-
-                if (subtree.IsOverflow)
-                {
-                    this.page = this
-                        .SplitSubtree(index, subtree);
-                }
-            }
-            finally
-            {
-                this.TryUnlock();
-            }
-        }
-
-        private PartitionPage<TKey, INode<TKey, TValue>> SplitSubtree(
-            int subtreeIndex,
-            INode<TKey, TValue> subtree)
-        {
-            var (leftNode, rightNode, pivotKey) = subtree
-                .Split();
-
-            return this.page.WriteSplit(
-                subtreeIndex,
-                leftNode,
-                rightNode,
-                pivotKey);
-        }
-
-        public void Update(TKey key, TValue value)
-        {
-            var subtree = this.page.Read(key);
-            subtree.Update(key, value);
+            return this.page.BinarySearch(key);
         }
 
         public bool ContainsKey(TKey key)
@@ -188,22 +139,74 @@ namespace BTrees.Nodes
                 .Read(key)
                 .TryRead(key, out value);
         }
+        #endregion
 
-        public int BinarySearch(TKey key)
+        #region writes
+        public bool TryInsert(TKey key, TValue value)
         {
-            return this.page.BinarySearch(key);
+            this.TryLock();
+            try
+            {
+                var (subtree, index) = this.page
+                    .SelectSubtree(key);
+
+                if (!subtree.IsFull)
+                {
+                    Monitor.Exit(this.gate);
+                }
+
+                var inserted = subtree.TryInsert(key, value);
+
+                if (subtree.IsOverflow)
+                {
+                    this.page = this.page
+                        .SplitSubtree(index, subtree);
+                }
+
+                return inserted;
+            }
+            finally
+            {
+                this.TryUnlock();
+            }
         }
 
-        public (INode<TKey, TValue> left, INode<TKey, TValue> right, TKey pivotKey) Split()
+        public bool TryDelete(TKey key)
         {
-            var (leftPage, rightPage, pivotKey) = this
-                .page
-                .Split();
+            this.TryLock();
+            try
+            {
+                var (subtree, index) = this
+                    .page
+                    .SelectSubtree(key);
 
-            return (
-                new PartitionNode<TKey, TValue>(leftPage),
-                new PartitionNode<TKey, TValue>(rightPage),
-                pivotKey);
+                if (!subtree.IsUnderflow)
+                {
+                    Monitor.Exit(this.gate);
+                }
+
+                var deleted = subtree.TryDelete(key);
+
+                if (subtree.IsUnderflow)
+                {
+                    this.page = this.page
+                        .MergeSubtree(index, subtree);
+                }
+
+                return deleted;
+            }
+            finally
+            {
+                this.TryUnlock();
+            }
         }
+
+        public bool TryUpdate(TKey key, TValue value)
+        {
+            return this.page
+                .Read(key)
+                .TryUpdate(key, value);
+        }
+        #endregion
     }
 }

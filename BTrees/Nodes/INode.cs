@@ -1,17 +1,6 @@
 ﻿namespace BTrees.Nodes
 {
-    internal interface INode<TKey>
-        where TKey : IComparable<TKey>
-    {
-        TKey MinKey { get; }
-        TKey MaxKey { get; }
-
-        int BinarySearch(TKey key);
-        bool ContainsKey(TKey key);
-    }
-
     internal interface INode<TKey, TValue>
-        : INode<TKey>
         where TKey : IComparable<TKey>
     {
         int Count { get; }
@@ -20,12 +9,19 @@
         bool IsOverflow { get; }
         bool IsUnderflow { get; }
         int Size { get; }
+        TKey MinKey { get; }
+        TKey MaxKey { get; }
 
+        int BinarySearch(TKey key);
+        bool ContainsKey(TKey key);
+
+        INode<TKey, TValue> Fork();
         INode<TKey, TValue> Merge(INode<TKey, TValue> node);
         (INode<TKey, TValue> left, INode<TKey, TValue> right, TKey pivotKey) Split();
-        void Delete(TKey key);
-        void Insert(TKey key, TValue value);
+
+        bool TryDelete(TKey key);
+        bool TryInsert(TKey key, TValue value);
         bool TryRead(TKey key, out TValue? value);
-        void Update(TKey key, TValue value);
+        bool TryUpdate(TKey key, TValue value);
     }
 }

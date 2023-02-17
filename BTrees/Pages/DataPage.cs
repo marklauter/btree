@@ -55,51 +55,12 @@ namespace BTrees.Pages
         public bool IsEmpty => this.Count == 0;
         public bool IsFull => this.Count == this.Size;
         public bool IsOverflow => this.Count > this.Size;
-        public bool IsUnderflow => this.Count < this.halfSize;
+        public bool IsUnderflow => this.Count <= this.halfSize;
         public int Size { get; }
         public TKey MinKey => this.Count != 0 ? this.keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
         public TKey MaxKey => this.Count != 0 ? this.keys[^1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
 
-        public int BinarySearch(TKey key)
-        {
-            return ImmutableArray.BinarySearch(this.keys, key);
-        }
-
-        public bool ContainsKey(TKey key)
-        {
-            return this.BinarySearch(key) >= 0;
-        }
-
-        public DataPage<TKey, TValue> Delete(TKey key)
-        {
-            var index = this.BinarySearch(key);
-            return index < 0
-                ? this
-                : new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys.RemoveAt(index),
-                    this.values.RemoveAt(index));
-        }
-
-        public DataPage<TKey, TValue> Fork()
-        {
-            return new DataPage<TKey, TValue>(
-                this.Size,
-                this.keys,
-                this.values);
-        }
-
-        public DataPage<TKey, TValue> Insert(TKey key, TValue value)
-        {
-            var index = this.BinarySearch(key);
-            return index < 0
-                ? new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys.Insert(~index, key),
-                    this.values.Insert(~index, value))
-                : throw new InvalidOperationException($"key {key} already exists");
-        }
-
+        #region structural
         public DataPage<TKey, TValue> Merge(DataPage<TKey, TValue> page)
         {
             return page is null
@@ -129,6 +90,20 @@ namespace BTrees.Pages
                     this.values[middle..this.Count]),
                 this.keys[middle]);
         }
+        #endregion
+
+        #region reads
+        public int BinarySearch(TKey key)
+        {
+            return ImmutableArray
+                .BinarySearch(this.keys, key);
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            var index = this.BinarySearch(key);
+            return index >= 0 && index < this.Count;
+        }
 
         public bool TryRead(TKey key, out TValue? value)
         {
@@ -141,17 +116,6 @@ namespace BTrees.Pages
             return found;
         }
 
-        public DataPage<TKey, TValue> Update(TKey key, TValue value)
-        {
-            var index = this.BinarySearch(key);
-            return index >= 0
-                ? new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys,
-                    this.values.SetItem(index, value))
-                : throw new KeyNotFoundException($"{key}");
-        }
-
         public int CompareTo(DataPage<TKey, TValue>? other)
         {
             return other is null
@@ -160,5 +124,50 @@ namespace BTrees.Pages
                     ? 0
                     : this.MinKey.CompareTo(other.MinKey);
         }
+        #endregion
+
+        #region writes
+        public bool TryDelete(TKey key, out DataPage<TKey, TValue> page)
+        {
+            var index = this.BinarySearch(key);
+            var deleted = index >= 0 && index < this.Count;
+            page = deleted
+                ? new DataPage<TKey, TValue>(
+                    this.Size,
+                    this.keys.RemoveAt(index),
+                    this.values.RemoveAt(index))
+                : this;
+
+            return deleted;
+        }
+
+        public bool TryInsert(TKey key, TValue value, out DataPage<TKey, TValue> page)
+        {
+            var index = this.BinarySearch(key);
+            var inserted = index < 0;
+            page = inserted
+                ? new DataPage<TKey, TValue>(
+                    this.Size,
+                    this.keys.Insert(~index, key),
+                    this.values.Insert(~index, value))
+                : this;
+
+            return inserted;
+        }
+
+        public bool TryUpdate(TKey key, TValue value, out DataPage<TKey, TValue> page)
+        {
+            var index = this.BinarySearch(key);
+            var updated = index >= 0 && index < this.Count;
+            page = updated
+                ? new DataPage<TKey, TValue>(
+                    this.Size,
+                    this.keys,
+                    this.values.SetItem(index, value))
+                : this;
+
+            return updated;
+        }
+        #endregion
     }
 }
