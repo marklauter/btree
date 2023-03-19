@@ -3,6 +3,17 @@
     public class ArraySearchTests
     {
         [Fact]
+        public void BinarySearchNotFoundOnEmptyArray()
+        {
+            var i = Array.Empty<int>();
+            var key = 5;
+            var index = Array.BinarySearch(i, key);
+            Assert.True(index < 0);
+            Assert.Equal(-1, index);
+            Assert.Equal(0, ~index);
+        }
+
+        [Fact]
         public void BinarySearchNotFoundBoudingRight()
         {
             var i = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, };

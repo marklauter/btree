@@ -1,172 +1,233 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
 {
-    // todo: unqiue or not should be implmeneted with an injected strategy
-
     [DebuggerDisplay(nameof(DataPage<TKey, TValue>))]
     internal sealed class DataPage<TKey, TValue>
-        : IComparable<DataPage<TKey, TValue>>
         where TKey : IComparable<TKey>
+        where TValue : IComparable<TValue>
     {
-        public static DataPage<TKey, TValue> Empty(int size)
+        private readonly record struct KeyValueTuple(TKey Key, ImmutableArray<TValue> Values)
+            : IComparable<KeyValueTuple>
         {
-            return new DataPage<TKey, TValue>(size);
-        }
+#pragma warning disable CS8604 // Possible null reference argument.
+            public static KeyValueTuple Undefined => new(default, ImmutableArray<TValue>.Empty);
+#pragma warning restore CS8604 // Possible null reference argument.
 
-        public static DataPage<TKey, TValue> Create(
-            int size,
-            ImmutableArray<TKey> keys,
-            ImmutableArray<TValue> values)
-        {
-            return new DataPage<TKey, TValue>(size, keys, values);
-        }
-
-        private readonly int halfSize;
-        private readonly ImmutableArray<TKey> keys;
-        private readonly ImmutableArray<TValue> values;
-
-        private DataPage(
-            int size,
-            ImmutableArray<TKey> keys,
-            ImmutableArray<TValue> values)
-            : this(size)
-        {
-
-            this.keys = keys;
-            this.values = values;
-        }
-
-        private DataPage(int size)
-        {
-            if (size < 1)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public KeyValueTuple(TKey key)
+                : this(key, ImmutableArray<TValue>.Empty)
             {
-                throw new ArgumentOutOfRangeException(nameof(size), $"{nameof(size)} must be > 0");
             }
 
-            this.Size = size;
-            this.halfSize = size / 2;
-            this.keys = ImmutableArray<TKey>.Empty;
-            this.values = ImmutableArray<TValue>.Empty;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public KeyValueTuple(TKey key, TValue value)
+                : this(key, ImmutableArray<TValue>.Empty.Add(value))
+            {
+            }
+
+            public bool IsEmpty => this.Values.IsEmpty;
+            public int Length => this.Values.Length;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int IndexOfValue(TValue value)
+            {
+                return ImmutableArray.BinarySearch(this.Values, value);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool ContainsValue(TValue value)
+            {
+                return this.IndexOfValue(value) >= 0;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public KeyValueTuple InsertValue(int index, TValue value)
+            {
+                return new KeyValueTuple(this.Key, this.Values.Insert(index, value));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool TryRemoveValue(TValue value, out KeyValueTuple tuple)
+            {
+                tuple = KeyValueTuple.Undefined;
+
+                if (this.IsEmpty)
+                {
+                    return false;
+                }
+
+                var index = this.IndexOfValue(value);
+                if (index < 0)
+                {
+                    return false;
+                }
+
+                tuple = new KeyValueTuple(
+                    this.Key,
+                    this.Values.RemoveAt(index));
+
+                return true;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int CompareTo(KeyValueTuple other)
+            {
+                return this.Key.CompareTo(other.Key);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static explicit operator TKey(KeyValueTuple tuple)
+            {
+                return tuple.Key;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static explicit operator KeyValueTuple(TKey key)
+            {
+                return new KeyValueTuple(key);
+            }
         }
 
-        public int Count => this.keys.Length;
-        public bool IsEmpty => this.Count == 0;
-        public bool IsFull => this.Count == this.Size;
-        public bool IsOverflow => this.Count > this.Size;
-        public bool IsUnderflow => this.Count <= this.halfSize;
-        public int Size { get; }
-        public TKey MinKey => this.Count != 0 ? this.keys[0] : throw new InvalidOperationException($"{nameof(this.MinKey)} is undefined when Count == 0");
-        public TKey MaxKey => this.Count != 0 ? this.keys[^1] : throw new InvalidOperationException($"{nameof(this.MaxKey)} is undefined when Count == 0");
-
-        #region structural
-        public DataPage<TKey, TValue> Merge(DataPage<TKey, TValue> page)
+        public readonly record struct SplitResult(
+            DataPage<TKey, TValue> LeftPage,
+            DataPage<TKey, TValue> RightPage,
+            TKey NewpivotKey)
         {
-            return page is null
-                ? throw new ArgumentNullException(nameof(page))
-                : page is DataPage<TKey, TValue> leafPage
-                    ? this.CompareTo(page) <= 0
-                        ? new DataPage<TKey, TValue>(
-                            this.Size,
-                            this.keys.AddRange(leafPage.keys),
-                            this.values.AddRange(leafPage.values))
-                        : page.Merge(this)
-                    : throw new InvalidOperationException($"{nameof(page)} was wrong type: {page.GetType().Name}. Expected {nameof(DataPage<TKey, TValue>)}");
         }
 
-        public (DataPage<TKey, TValue> leftPage, DataPage<TKey, TValue> rightPage, TKey pivotKey) Split()
-        {
-            var middle = this.Count / 2;
+        private readonly ImmutableArray<KeyValueTuple> tuples;
 
-            return (
-                new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys[..middle],
-                    this.values[..middle]),
-                new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys[middle..this.Count],
-                    this.values[middle..this.Count]),
-                this.keys[middle]);
+        #region ctor
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DataPage<TKey, TValue> Empty()
+        {
+            return new DataPage<TKey, TValue>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DataPage(ImmutableArray<KeyValueTuple> tuples)
+        {
+            this.tuples = tuples;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DataPage()
+            : this(ImmutableArray<KeyValueTuple>.Empty)
+        {
         }
         #endregion
 
-        #region reads
-        public int BinarySearch(TKey key)
+        #region properties
+        public bool IsEmpty => this.tuples.IsEmpty;
+        public int Length => this.tuples.Length;
+        #endregion
+
+        #region structural modifications
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public SplitResult Split()
         {
-            return ImmutableArray
-                .BinarySearch(this.keys, key);
+            var length = this.tuples.Length;
+            var middle = length >> 1;
+
+            return new SplitResult(
+                new DataPage<TKey, TValue>(this.tuples[..middle]),
+                new DataPage<TKey, TValue>(this.tuples[middle..length]),
+                this.tuples[middle].Key);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DataPage<TKey, TValue> Merge(DataPage<TKey, TValue> otherPage)
+        {
+            return new DataPage<TKey, TValue>(this.tuples
+                .AddRange(otherPage.tuples)
+                .Sort());
+        }
+        #endregion
+
+        #region read operations
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Count()
+        {
+            return this.tuples.Sum(t => t.Length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int IndexOfKey(TKey key)
+        {
+            return ImmutableArray.BinarySearch(this.tuples, (KeyValueTuple)key);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key)
         {
-            var index = this.BinarySearch(key);
-            return index >= 0 && index < this.Count;
+            return this.IndexOfKey(key) >= 0;
         }
 
-        public bool TryRead(TKey key, out TValue? value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ImmutableArray<TValue> Read(TKey key)
         {
-            var index = this.BinarySearch(key);
-            var found = index >= 0;
-            value = found
-                ? this.values[index]
-                : default;
+            if (this.IsEmpty)
+            {
+                return ImmutableArray<TValue>.Empty;
+            }
 
-            return found;
-        }
-
-        public int CompareTo(DataPage<TKey, TValue>? other)
-        {
-            return other is null
-                ? -1
-                : this == other
-                    ? 0
-                    : this.MinKey.CompareTo(other.MinKey);
+            var index = this.IndexOfKey(key);
+            return index >= 0
+                ? this.tuples[index].Values
+                : ImmutableArray<TValue>.Empty;
         }
         #endregion
 
         #region writes
-        public bool TryDelete(TKey key, out DataPage<TKey, TValue> page)
+        public bool TryDelete(TKey key, TValue value, out DataPage<TKey, TValue>? page)
         {
-            var index = this.BinarySearch(key);
-            var deleted = index >= 0 && index < this.Count;
-            page = deleted
-                ? new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys.RemoveAt(index),
-                    this.values.RemoveAt(index))
-                : this;
+            page = null;
 
-            return deleted;
+            var keyIndex = this.IndexOfKey(key);
+            var containsKey = keyIndex >= 0;
+            if (containsKey)
+            {
+                var removed = this.tuples[keyIndex].TryRemoveValue(value, out var tuple);
+                if (removed)
+                {
+                    page = tuple.IsEmpty
+                        ? new DataPage<TKey, TValue>(this.tuples.RemoveAt(keyIndex))
+                        : new DataPage<TKey, TValue>(this.tuples.SetItem(keyIndex, tuple));
+
+                    return true;
+                }
+            }
+
+            return false;
         }
 
-        public bool TryInsert(TKey key, TValue value, out DataPage<TKey, TValue> page)
+        public bool TryInsert(TKey key, TValue value, out DataPage<TKey, TValue>? page)
         {
-            var index = this.BinarySearch(key);
-            var inserted = index < 0;
-            page = inserted
-                ? new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys.Insert(~index, key),
-                    this.values.Insert(~index, value))
-                : this;
+            page = null;
 
-            return inserted;
-        }
+            var keyIndex = this.IndexOfKey(key);
+            var containsKey = keyIndex >= 0;
+            if (containsKey)
+            {
+                var tuple = this.tuples[keyIndex];
+                var valueIndex = tuple.IndexOfValue(value);
+                var constainsValue = valueIndex >= 0;
+                if (constainsValue)
+                {
+                    return false;
+                }
 
-        public bool TryUpdate(TKey key, TValue value, out DataPage<TKey, TValue> page)
-        {
-            var index = this.BinarySearch(key);
-            var updated = index >= 0 && index < this.Count;
-            page = updated
-                ? new DataPage<TKey, TValue>(
-                    this.Size,
-                    this.keys,
-                    this.values.SetItem(index, value))
-                : this;
+                page = new DataPage<TKey, TValue>(this.tuples.SetItem(keyIndex, tuple.InsertValue(~valueIndex, value)));
+            }
+            else
+            {
+                page = new DataPage<TKey, TValue>(this.tuples.Insert(~keyIndex, new KeyValueTuple(key, value)));
+            }
 
-            return updated;
+            return true;
         }
         #endregion
     }
