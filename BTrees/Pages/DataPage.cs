@@ -9,20 +9,20 @@ namespace BTrees.Pages
         where TKey : struct, IComparable<TKey>
         where TValue : IComparable<TValue>
     {
-        private readonly record struct KeyValueTuple(TKey Key, ImmutableArray<TValue> Values)
-            : IComparable<KeyValueTuple>
+        private readonly record struct KeyValuesTuple(TKey Key, ImmutableArray<TValue> Values)
+            : IComparable<KeyValuesTuple>
             , IComparable<TKey>
         {
-            public static KeyValueTuple Undefined { get; } = new(default, ImmutableArray<TValue>.Empty);
+            public static KeyValuesTuple Undefined { get; } = new(default, ImmutableArray<TValue>.Empty);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValueTuple(TKey key)
+            public KeyValuesTuple(TKey key)
                 : this(key, ImmutableArray<TValue>.Empty)
             {
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValueTuple(TKey key, TValue value)
+            public KeyValuesTuple(TKey key, TValue value)
                 : this(key, ImmutableArray<TValue>.Empty.Add(value))
             {
             }
@@ -43,13 +43,13 @@ namespace BTrees.Pages
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValueTuple InsertValue(int index, TValue value)
+            public KeyValuesTuple InsertValue(int index, TValue value)
             {
-                return new KeyValueTuple(this.Key, this.Values.Insert(index, value));
+                return new KeyValuesTuple(this.Key, this.Values.Insert(index, value));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool TryRemoveValue(TValue value, out KeyValueTuple tuple)
+            public bool TryRemoveValue(TValue value, out KeyValuesTuple tuple)
             {
                 tuple = Undefined;
 
@@ -64,7 +64,7 @@ namespace BTrees.Pages
                     return false;
                 }
 
-                tuple = new KeyValueTuple(
+                tuple = new KeyValuesTuple(
                     this.Key,
                     this.Values.RemoveAt(index));
 
@@ -72,7 +72,7 @@ namespace BTrees.Pages
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CompareTo(KeyValueTuple other)
+            public int CompareTo(KeyValuesTuple other)
             {
                 return this.Key.CompareTo(other.Key);
             }
@@ -84,39 +84,39 @@ namespace BTrees.Pages
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static explicit operator TKey(KeyValueTuple tuple)
+            public static explicit operator TKey(KeyValuesTuple tuple)
             {
                 return tuple.Key;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static explicit operator KeyValueTuple(TKey key)
+            public static explicit operator KeyValuesTuple(TKey key)
             {
-                return new KeyValueTuple(key);
+                return new KeyValuesTuple(key);
             }
         }
 
         public readonly record struct SplitResult(
             DataPage<TKey, TValue> LeftPage,
             DataPage<TKey, TValue> RightPage,
-            TKey NewpivotKey)
+            TKey PivotKey)
         {
         }
 
-        private readonly ImmutableArray<KeyValueTuple> tuples;
+        private readonly ImmutableArray<KeyValuesTuple> tuples;
 
         #region ctor
         public static DataPage<TKey, TValue> Empty { get; } = new DataPage<TKey, TValue>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DataPage(ImmutableArray<KeyValueTuple> tuples)
+        private DataPage(ImmutableArray<KeyValuesTuple> tuples)
         {
             this.tuples = tuples;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private DataPage()
-            : this(ImmutableArray<KeyValueTuple>.Empty)
+            : this(ImmutableArray<KeyValuesTuple>.Empty)
         {
         }
         #endregion
@@ -130,6 +130,11 @@ namespace BTrees.Pages
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SplitResult Split()
         {
+            if (this.tuples.Length < 2)
+            {
+                throw new InvalidOperationException("Can't split page with less than two elements.");
+            }
+
             var length = this.tuples.Length;
             var middle = length >> 1;
 
@@ -208,6 +213,19 @@ namespace BTrees.Pages
         #endregion
 
         #region writes
+        public DataPage<TKey, TValue> Delete(TKey key)
+        {
+            var page = this;
+            var keyIndex = this.IndexOfKey(key);
+            var containsKey = keyIndex >= 0;
+            if (containsKey)
+            {
+                page = new DataPage<TKey, TValue>(this.tuples.RemoveAt(keyIndex));
+            }
+
+            return page;
+        }
+
         public DataPage<TKey, TValue> Delete(TKey key, TValue value)
         {
             var page = this;
@@ -244,7 +262,7 @@ namespace BTrees.Pages
             }
             else
             {
-                page = new DataPage<TKey, TValue>(this.tuples.Insert(~keyIndex, new KeyValueTuple(key, value)));
+                page = new DataPage<TKey, TValue>(this.tuples.Insert(~keyIndex, new KeyValuesTuple(key, value)));
             }
 
             return page;
