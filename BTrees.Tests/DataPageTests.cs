@@ -1,398 +1,357 @@
-﻿//using BTrees.Pages;
+﻿using BTrees.Pages;
 
-//namespace BTrees.Tests
-//{
-//    public sealed class DataPageTests
-//    {
-//        [Fact]
-//        public void Empty_Page_Has_Correct_Size()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            Assert.Equal(size, page.Size);
-//        }
+namespace BTrees.Tests
+{
+    public sealed class DataPageTests
+    {
+        [Fact]
+        public void Empty_Page_Has_Correct_Length()
+        {
+            var page = DataPage<int, int>.Empty;
+            Assert.Equal(0, page.Length);
+        }
 
-//        [Fact]
-//        public void Empty_Page_Has_Correct_Count()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            Assert.Equal(0, page.Count);
-//        }
+        [Fact]
+        public void Empty_Page_Has_Correct_Count()
+        {
+            var page = DataPage<int, int>.Empty;
+            Assert.Equal(0, page.Count());
+        }
 
-//        [Fact]
-//        public void Empty_Page_IsEmpty()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            Assert.True(page.IsEmpty);
-//        }
+        [Fact]
+        public void Empty_Page_IsEmpty()
+        {
+            var page = DataPage<int, int>.Empty;
+            Assert.True(page.IsEmpty);
+        }
 
-//        [Fact]
-//        public void Insert_Returns_New_Page()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            var newPage = page.Insert(1, 1);
-//            Assert.False(page == newPage);
-//        }
+        [Fact]
+        public void Insert_Returns_New_Page()
+        {
+            var page = DataPage<int, int>.Empty;
+            var newPage = page.Insert(1, 1);
+            Assert.True(page.IsEmpty);
+            Assert.False(newPage.IsEmpty);
+            Assert.True(page != newPage);
+            Assert.Equal(1, newPage.Length);
+            Assert.Equal(1, newPage.Count());
+        }
 
-//        [Fact]
-//        public void Insert_Returns_New_Page_With_Count_Plus_One_Elements()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            var newPage = page.Insert(1, 1);
-//            Assert.Equal(page.Count + 1, newPage.Count);
-//        }
+        [Fact]
+        public void NewPage_Returned_By_Insert_Contains_Inserted_Key()
+        {
+            var page = DataPage<int, int>.Empty;
+            page = page.Insert(1, 1);
+            Assert.True(page.ContainsKey(1));
+        }
 
-//        [Fact]
-//        public void Insert_Returns_New_NonEmpty_Page()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            var newPage = page.Insert(1, 1);
-//            Assert.False(newPage.IsEmpty);
-//        }
+        [Fact]
+        public void Read_Returns_Inserted_Element()
+        {
+            var expectedValue = "one";
+            var page = DataPage<int, string>.Empty
+                .Insert(1, expectedValue);
+            var values = page.Read(1);
+            var actualValue = Assert.Single(values);
+            Assert.Equal(expectedValue, actualValue, true);
+        }
 
-//        [Fact]
-//        public void Insert_Returns_New_Page_That_Contains_Inserted_Key()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, string>.Empty(size);
-//            var newPage = page.Insert(1, "one");
-//            Assert.True(newPage.ContainsKey(1));
-//        }
+        [Fact]
+        public void Inserted_Multiple_Values_With_Duplicate_Key_Read_Returns_All_Inserted_Elements()
+        {
+            var expectedValue1 = "one";
+            var expectedValue2 = "two";
+            var page = DataPage<int, string>.Empty
+                .Insert(1, expectedValue1)
+                .Insert(1, expectedValue2);
 
-//        [Fact]
-//        public void Insert_Returns_New_Page_That_Contains_Inserted_Element()
-//        {
-//            var size = 10;
-//            var expectedValue = "one";
-//            var page = DataPage<int, string>.Empty(size);
-//            var newPage = page.Insert(1, expectedValue);
-//            Assert.True(newPage.TryRead(1, out var actualValue));
-//            Assert.Equal(expectedValue, actualValue);
-//        }
+            Assert.Equal(1, page.Length);
+            Assert.Equal(2, page.Count());
 
-//        [Fact]
-//        public void Insert_Returns_New_Page_That_Contains_N_Inserted_Elements()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+            var values = page.Read(1);
+            Assert.Equal(2, values.Length);
+            Assert.Contains(expectedValue1, values);
+            Assert.Contains(expectedValue2, values);
+        }
 
-//            Assert.Equal(size, page.Count);
-//        }
+        [Fact]
+        public void Insert_Returns_New_Page_That_Contains_N_Inserted_Elements()
+        {
+            var length = 5;
+            var page = DataPage<int, int>.Empty;
+            for (var i = 0; i < length; ++i)
+            {
+                page = page.Insert(i, i);
+            }
 
-//        private static int[] UniqueRandoms(int seed, int count, int maxValue)
-//        {
-//            var rnd = new Random(seed);
-//            var rndSet = new HashSet<int>(count);
+            Assert.Equal(length, page.Length);
+            Assert.Equal(length, page.Count());
+        }
 
-//            while (rndSet.Count < count)
-//            {
-//                var value = rnd.Next(maxValue);
-//                while (!rndSet.Add(value))
-//                {
-//                    value = rnd.Next(maxValue);
-//                }
-//            }
+        private static Guid[] UniqueRandoms(int length)
+        {
+            var guids = new Guid[length];
+            for (var i = 0; i < length; ++i)
+            {
+                guids[i] = Guid.NewGuid();
+            }
 
-//            return rndSet.ToArray();
-//        }
+            return guids;
+        }
 
-//        [Theory]
-//        [InlineData(1)]
-//        [InlineData(2)]
-//        [InlineData(5)]
-//        [InlineData(7)]
-//        [InlineData(13)]
-//        public void Insert_Returns_New_Page_With_Elements_In_Correct_Order(int rndSeed)
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            var rndArray = UniqueRandoms(rndSeed, size, size);
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void ContainsKey_Returns_True(int length)
+        {
+            var guids = UniqueRandoms(length);
+            var page = DataPage<int, Guid>.Empty;
+            for (var i = 0; i < length; ++i)
+            {
+                page = page.Insert(i, guids[i]);
+            }
 
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(rndArray[i], rndArray[i]);
-//            }
+            for (var i = 0; i < length; ++i)
+            {
+                Assert.True(page.ContainsKey(i));
+            }
+        }
 
-//            for (var i = 0; i < size; ++i)
-//            {
-//                var index = page.BinarySearch(rndArray[i]);
-//                Assert.Equal(rndArray[i], index);
-//            }
-//        }
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void ContainsKey_Returns_False(int length)
+        {
+            var guids = UniqueRandoms(length);
+            var page = DataPage<int, Guid>.Empty;
+            for (var i = 0; i < length; ++i)
+            {
+                page = page.Insert(i, guids[i]);
+            }
 
-//        [Theory]
-//        [InlineData(1)]
-//        [InlineData(2)]
-//        [InlineData(5)]
-//        [InlineData(7)]
-//        [InlineData(13)]
-//        public void Insert_With_Multiple_Values_Returns_New_Page_Containing_Keys(int rndSeed)
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            var rndArray = UniqueRandoms(rndSeed, size, size * 10);
+            for (var i = length; i < length * 2; ++i)
+            {
+                Assert.False(page.ContainsKey(i));
+            }
+        }
 
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(rndArray[i], rndArray[i]);
-//            }
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void IndexOfKey_Returns_Correct_Key(int length)
+        {
+            var guids = UniqueRandoms(length);
+            var page = DataPage<int, Guid>.Empty;
+            for (var i = 0; i < length; ++i)
+            {
+                page = page.Insert(i, guids[i]);
+            }
 
-//            for (var i = 0; i < size; ++i)
-//            {
-//                Assert.True(page.ContainsKey(rndArray[i]));
-//            }
-//        }
+            for (var i = 0; i < length; ++i)
+            {
+                var index = page.IndexOfKey(i);
+                Assert.Equal(i, index);
+            }
 
-//        [Theory]
-//        [InlineData(1)]
-//        [InlineData(2)]
-//        [InlineData(5)]
-//        [InlineData(7)]
-//        [InlineData(13)]
-//        public void Insert_Multiple_Values_Contains_Values(int rndSeed)
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            var rndArray = UniqueRandoms(rndSeed, size, size * 10);
+            var expected = ~page.Length;
+            for (var i = length; i < length * 2; ++i)
+            {
+                var index = page.IndexOfKey(i);
+                Assert.Equal(expected, index);
+            }
+        }
 
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(rndArray[i], rndArray[i]);
-//            }
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void Read_Returns_Correct_Values(int length)
+        {
+            var guids = UniqueRandoms(length);
+            var page = DataPage<int, Guid>.Empty;
+            for (var i = 0; i < length; ++i)
+            {
+                page = page.Insert(i, guids[i]);
+            }
 
-//            for (var i = 0; i < size; ++i)
-//            {
-//                Assert.True(page.TryRead(rndArray[i], out var value));
-//                Assert.Equal(rndArray[i], value);
-//            }
-//        }
+            for (var i = 0; i < length; ++i)
+            {
+                var values = page.Read(i);
+                var actual = Assert.Single(values);
+                Assert.Equal(guids[i], actual);
+            }
 
-//        [Fact]
-//        public void Insert_Duplicate_Key_Throws_InvalidOperationException()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            page = page.Insert(1, 1);
-//            var ex = Assert.Throws<InvalidOperationException>(() => page.Insert(1, 1));
-//            Assert.Contains("1", ex.Message);
-//        }
+            for (var i = length; i < length * 2; ++i)
+            {
+                var values = page.Read(i);
+                Assert.Empty(values);
+            }
+        }
 
-//        [Fact]
-//        public void Fork_Creates_Shallow_Copy_Correct_Order()
-//        {
-//            var size = 10;
-//            var expectedValue = new object();
-//            var page = DataPage<int, object>.Empty(size);
-//            page = page.Insert(1, expectedValue);
-//            var fork = page.Fork();
-//            Assert.False(page == fork); // have to use == instead of Assert.Equal because of implementing IComparable<IPage>
-//            Assert.True(fork.TryRead(1, out var actualValue));
-//            Assert.Equal(expectedValue, actualValue);
-//        }
+        //        [Fact]
+        //        public void Delete_Returns_New_Page_With_Key_Removed()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//        [Fact]
-//        public void Delete_Returns_New_Page_With_Key_Removed()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //            page = page.Delete(5);
+        //            Assert.False(page.ContainsKey(5));
+        //            Assert.Equal(size - 1, page.Count);
+        //        }
 
-//            page = page.Delete(5);
-//            Assert.False(page.ContainsKey(5));
-//            Assert.Equal(size - 1, page.Count);
-//        }
+        //        [Fact]
+        //        public void Delete_Returns_New_Page_With_Keys_And_Values_Aligned()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//        [Fact]
-//        public void Delete_Returns_New_Page_With_Keys_And_Values_Aligned()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //            page = page.Delete(5);
+        //            Assert.True(page.TryRead(6, out var value));
+        //            Assert.Equal(6, value);
+        //        }
 
-//            page = page.Delete(5);
-//            Assert.True(page.TryRead(6, out var value));
-//            Assert.Equal(6, value);
-//        }
+        //        [Fact]
+        //        public void Delete_Returns_Same_Page_When_Key_Not_Found()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//        [Fact]
-//        public void Delete_Returns_Same_Page_When_Key_Not_Found()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //            Assert.Equal(page, page.Delete(size + 1));
+        //        }
 
-//            Assert.Equal(page, page.Delete(size + 1));
-//        }
+        //        [Fact]
+        //        public void Split_Returns_New_Pages()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//        [Fact]
-//        public void Update_Returns_New_Page_With_New_Value()
-//        {
-//            var size = 10;
-//            var key = 5;
-//            var expectedValue = 50;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //            var (left, right, pivotKey) = page.Split();
 
-//            var updatedPage = page.Update(key, expectedValue);
-//            Assert.True(updatedPage.TryRead(key, out var actualvalue));
-//            Assert.Equal(expectedValue, actualvalue);
+        //            Assert.NotNull(left);
+        //            Assert.Equal(size / 2, left.Count);
 
-//            Assert.True(page.TryRead(key, out var originalValue));
-//            Assert.Equal(key, originalValue);
-//        }
+        //            Assert.NotNull(right);
+        //            Assert.Equal(size / 2, right.Count);
 
-//        [Fact]
-//        public void Update_Throws_KeyNotFoundException_When_Key_Not_Found()
-//        {
-//            var size = 10;
-//            var key = size + 1;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //            Assert.Equal(5, pivotKey);
+        //        }
 
-//            var ex = Assert.Throws<KeyNotFoundException>(() => page.Update(key, key));
-//#pragma warning disable CA1305 // Specify IFormatProvider
-//            Assert.Contains(key.ToString(), ex.Message);
-//#pragma warning restore CA1305 // Specify IFormatProvider
-//        }
+        //        [Fact]
+        //        public void Split_Pages_Contain_Correct_Key_Subsets()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//        [Fact]
-//        public void Update_Throws_KeyNotFoundException_When_Page_Is_Empty()
-//        {
-//            var size = 10;
-//            var key = size + 1;
-//            var page = DataPage<int, int>.Empty(size);
+        //            var (left, right, pivotKey) = page.Split();
+        //            for (var i = 0; i < size / 2; ++i)
+        //            {
+        //                Assert.True(left.ContainsKey(i));
+        //            }
 
-//            var ex = Assert.Throws<KeyNotFoundException>(() => page.Update(key, key));
-//#pragma warning disable CA1305 // Specify IFormatProvider
-//            Assert.Contains(key.ToString(), ex.Message);
-//#pragma warning restore CA1305 // Specify IFormatProvider
-//        }
+        //            for (var i = pivotKey; i < pivotKey + size / 2; ++i)
+        //            {
+        //                Assert.True(right.ContainsKey(i));
+        //            }
+        //        }
 
-//        [Fact]
-//        public void Split_Returns_New_Pages()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //        [Fact]
+        //        public void Split_Pages_Does_Not_Contain_Incorrect_Key_Subsets()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//            var (left, right, pivotKey) = page.Split();
+        //            var (left, right, pivotKey) = page.Split();
+        //            for (var i = 0; i < size / 2; ++i)
+        //            {
+        //                Assert.False(right.ContainsKey(i));
+        //            }
 
-//            Assert.NotNull(left);
-//            Assert.Equal(size / 2, left.Count);
+        //            for (var i = pivotKey; i < pivotKey + size / 2; ++i)
+        //            {
+        //                Assert.False(left.ContainsKey(i));
+        //            }
+        //        }
 
-//            Assert.NotNull(right);
-//            Assert.Equal(size / 2, right.Count);
+        //        [Fact]
+        //        public void Merge_Left_Contains_All_Keys()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//            Assert.Equal(5, pivotKey);
-//        }
+        //            var (left, right, _) = page.Split();
+        //            var mergedPage = left.Merge(right);
 
-//        [Fact]
-//        public void Split_Pages_Contain_Correct_Key_Subsets()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                Assert.True(mergedPage.ContainsKey(i));
+        //            }
+        //        }
 
-//            var (left, right, pivotKey) = page.Split();
-//            for (var i = 0; i < size / 2; ++i)
-//            {
-//                Assert.True(left.ContainsKey(i));
-//            }
+        //        [Fact]
+        //        public void Merge_Right_Contains_All_Keys()
+        //        {
+        //            var size = 10;
+        //            var page = DataPage<int, int>.Empty(size);
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                page = page.Insert(i, i);
+        //            }
 
-//            for (var i = pivotKey; i < pivotKey + size / 2; ++i)
-//            {
-//                Assert.True(right.ContainsKey(i));
-//            }
-//        }
+        //            var (left, right, _) = page.Split();
+        //            var mergedPage = right.Merge(left);
 
-//        [Fact]
-//        public void Split_Pages_Does_Not_Contain_Incorrect_Key_Subsets()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
+        //            for (var i = 0; i < size; ++i)
+        //            {
+        //                Assert.True(mergedPage.ContainsKey(i));
+        //            }
+        //        }
+    }
+}
 
-//            var (left, right, pivotKey) = page.Split();
-//            for (var i = 0; i < size / 2; ++i)
-//            {
-//                Assert.False(right.ContainsKey(i));
-//            }
-
-//            for (var i = pivotKey; i < pivotKey + size / 2; ++i)
-//            {
-//                Assert.False(left.ContainsKey(i));
-//            }
-//        }
-
-//        [Fact]
-//        public void Merge_Left_Contains_All_Keys()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
-
-//            var (left, right, _) = page.Split();
-//            var mergedPage = left.Merge(right);
-
-//            for (var i = 0; i < size; ++i)
-//            {
-//                Assert.True(mergedPage.ContainsKey(i));
-//            }
-//        }
-
-//        [Fact]
-//        public void Merge_Right_Contains_All_Keys()
-//        {
-//            var size = 10;
-//            var page = DataPage<int, int>.Empty(size);
-//            for (var i = 0; i < size; ++i)
-//            {
-//                page = page.Insert(i, i);
-//            }
-
-//            var (left, right, _) = page.Split();
-//            var mergedPage = right.Merge(left);
-
-//            for (var i = 0; i < size; ++i)
-//            {
-//                Assert.True(mergedPage.ContainsKey(i));
-//            }
-//        }
-//    }
-//}
