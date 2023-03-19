@@ -19,11 +19,8 @@ namespace BTrees.Tests.Experiments
             var bytes = reader.ReadBytes(Marshal.SizeOf(typeof(T)));
             var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
             var address = handle.AddrOfPinnedObject();
-            var ptr = Marshal.PtrToStructure(address, typeof(T));
-            if (ptr == null)
-            {
-                throw new InvalidDataException($"Could not read struct of type {typeof(T).Name} from stream.");
-            }
+            var ptr = Marshal.PtrToStructure(address, typeof(T))
+                ?? throw new InvalidDataException($"Could not read struct of type {typeof(T).Name} from stream.");
 
             var value = (T)ptr;
             handle.Free();
