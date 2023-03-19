@@ -412,43 +412,55 @@ namespace BTrees.Tests
             }
         }
 
-        //        [Fact]
-        //        public void Merge_Left_Contains_All_Keys()
-        //        {
-        //            var size = 10;
-        //            var page = DataPage<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                page = page.Insert(i, i);
-        //            }
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void Merged_Left_Pages_Contain_All_Keys(int length)
+        {
+            var guids = UniqueRandoms(length);
+            var page = DataPage<int, Guid>.Empty;
+            for (var key = 0; key < length; ++key)
+            {
+                page = page.Insert(key, guids[key]);
+            }
 
-        //            var (left, right, _) = page.Split();
-        //            var mergedPage = left.Merge(right);
+            var split = page.Split();
+            var merged = split.LeftPage.Merge(split.RightPage);
 
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                Assert.True(mergedPage.ContainsKey(i));
-        //            }
-        //        }
+            for (var key = 0; key < length; ++key)
+            {
+                Assert.True(merged.ContainsKey(key));
+            }
+        }
 
-        //        [Fact]
-        //        public void Merge_Right_Contains_All_Keys()
-        //        {
-        //            var size = 10;
-        //            var page = DataPage<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                page = page.Insert(i, i);
-        //            }
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void Merged_Right_Pages_Contain_All_Keys(int length)
+        {
+            var guids = UniqueRandoms(length);
+            var page = DataPage<int, Guid>.Empty;
+            for (var key = 0; key < length; ++key)
+            {
+                page = page.Insert(key, guids[key]);
+            }
 
-        //            var (left, right, _) = page.Split();
-        //            var mergedPage = right.Merge(left);
+            var split = page.Split();
+            var merged = split.RightPage.Merge(split.LeftPage);
 
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                Assert.True(mergedPage.ContainsKey(i));
-        //            }
-        //        }
+            for (var key = 0; key < length; ++key)
+            {
+                Assert.True(merged.ContainsKey(key));
+            }
+        }
     }
 }
 

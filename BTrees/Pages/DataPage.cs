@@ -147,9 +147,9 @@ namespace BTrees.Pages
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DataPage<TKey, TValue> Merge(DataPage<TKey, TValue> otherPage)
         {
-            return new DataPage<TKey, TValue>(this.tuples
-                .AddRange(otherPage.tuples)
-                .Sort());
+            return this.tuples[0].CompareTo(otherPage.tuples[0]) < 0
+                ? new DataPage<TKey, TValue>(this.tuples.AddRange(otherPage.tuples).Sort())
+                : new DataPage<TKey, TValue>(otherPage.tuples.AddRange(this.tuples).Sort());
         }
         #endregion
 
@@ -212,7 +212,7 @@ namespace BTrees.Pages
         }
         #endregion
 
-        #region writes
+        #region write operations
         public DataPage<TKey, TValue> Delete(TKey key)
         {
             var page = this;
