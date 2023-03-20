@@ -13,7 +13,6 @@
 		<PackageProjectUrl>https://github.com/marklauter/btree</PackageProjectUrl>
 		<RepositoryType>GIT</RepositoryType>
 		<PackageLicense>MIT License: https://github.com/marklauter/btree/blob/main/LICENSE</PackageLicense>
-		<PlatformTarget>x64</PlatformTarget>
 		<Title>Giraffe DB Copy-on-Write B+Tree</Title>
 	</PropertyGroup>
 
