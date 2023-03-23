@@ -1,124 +1,112 @@
-﻿namespace BTrees.Nodes
+﻿using BTrees.Pages;
+using System.Collections.Immutable;
+
+namespace BTrees.Nodes
 {
     //todo: logging
     //https://www.stevejgordon.co.uk/high-performance-logging-in-net-core
     //https://github.com/aspnet/Logging/blob/a024648829c60/samples/SampleApp/LoggerExtensions.cs
 
-    //internal sealed class DataNode<TKey, TValue>
-    //    : INode<TKey, TValue>
-    //    where TKey : IComparable<TKey>
-    //{
-    //    public static DataNode<TKey, TValue> Empty(int size)
-    //    {
-    //        return new DataNode<TKey, TValue>(size);
-    //    }
+    internal sealed class DataNode<TKey, TValue>
+        : INode<TKey, TValue>
+        where TKey : struct, IComparable<TKey>
+        where TValue : IComparable<TValue>
+    {
+        private readonly object gate = new();
+        private readonly int maxSize;
+        private DataPage<TKey, TValue> page = DataPage<TKey, TValue>.Empty;
 
-    //    private DataNode(int size)
-    //    {
-    //        this.page = DataPage<TKey, TValue>.Empty(size);
-    //    }
+        private DataNode(int maxSize)
+        {
+            this.maxSize = maxSize;
+        }
 
-    //    private DataNode(DataPage<TKey, TValue> page)
-    //    {
-    //        this.page = page;
-    //    }
+        private DataNode(
+            int maxSize,
+            INode<TKey, TValue> parent)
+            : this(maxSize)
+        {
+            this.Parent = parent;
+        }
 
-    //    private readonly object gate = new();
-    //    private DataPage<TKey, TValue> page;
+        private DataNode(
+            int maxSize,
+            INode<TKey, TValue> parent,
+            INode<TKey, TValue>? leftSibling,
+            INode<TKey, TValue>? rightSibling,
+            DataPage<TKey, TValue> page)
+            : this(maxSize, parent)
+        {
+            this.LeftSibling = leftSibling;
+            this.RightSibling = rightSibling;
+            this.page = page;
+        }
 
-    //    public int Count => this.page.Count;
-    //    public bool IsEmpty => this.page.IsEmpty;
-    //    public bool IsFull => this.page.IsFull;
-    //    public bool IsOverflow => this.page.IsOverflow;
-    //    public bool IsUnderflow => this.page.IsUnderflow;
-    //    public int Size => this.page.Size;
-    //    public TKey MinKey => this.page.MinKey;
-    //    public TKey MaxKey => this.page.MaxKey;
+        public int Length => this.page.Length;
+        public bool IsEmpty => this.page.IsEmpty;
+        public bool IsFull { get; }
+        public bool IsOverflow { get; }
+        public bool IsUnderflow { get; }
+        public int Size { get; }
+        public TKey PivotKey { get; }
 
-    //    #region structure
-    //    public INode<TKey, TValue> Fork()
-    //    {
-    //        return new DataNode<TKey, TValue>(this.page);
-    //    }
+        public INode<TKey, TValue>? Parent { get; }
+        public INode<TKey, TValue>? LeftSibling { get; }
+        public INode<TKey, TValue>? RightSibling { get; }
 
-    //    public INode<TKey, TValue> Merge(INode<TKey, TValue> node)
-    //    {
-    //        return node is null
-    //            ? throw new ArgumentNullException(nameof(node))
-    //            : node is DataNode<TKey, TValue> dataNode
-    //                ? (INode<TKey, TValue>)new DataNode<TKey, TValue>(this.page.Merge(dataNode.page))
-    //                : throw new InvalidOperationException($"{nameof(node)} was wrong type: {node.GetType().Name}. Expected {nameof(DataNode<TKey, TValue>)}");
-    //    }
+        public INode<TKey, TValue> Fork()
+        {
+            return new DataNode<TKey, TValue>(this.maxSize, this.page);
+        }
 
-    //    public (INode<TKey, TValue> left, INode<TKey, TValue> right, TKey pivotKey) Split()
-    //    {
-    //        var (leftPage, rightPage, pivotKey) = this.page.Split();
-    //        return (
-    //            new DataNode<TKey, TValue>(leftPage),
-    //            new DataNode<TKey, TValue>(rightPage),
-    //            pivotKey);
-    //    }
-    //    #endregion
+        public INode<TKey, TValue> Merge(INode<TKey, TValue> node)
+        {
+            return node is DataNode<TKey, TValue> dataNode
+                ? (INode<TKey, TValue>)new DataNode<TKey, TValue>(this.maxSize, this.page.Merge(dataNode.page))
+                : throw new InvalidOperationException($"{nameof(node)} was wrong type: {node.GetType().Name}. Expected {nameof(DataNode<TKey, TValue>)}");
+        }
 
-    //    #region reads
-    //    public int BinarySearch(TKey key)
-    //    {
-    //        return this.page.BinarySearch(key);
-    //    }
+        public INode<TKey, TValue>.SplitResult Split()
+        {
+            var split = this.page.Split();
+            return new INode<TKey, TValue>.SplitResult(
+                new DataNode<TKey, TValue>(this.maxSize, split.LeftPage),
+                new DataNode<TKey, TValue>(this.maxSize, split.RightPage),
+                split.PivotKey);
+        }
 
-    //    public bool ContainsKey(TKey key)
-    //    {
-    //        return this.page.ContainsKey(key);
-    //    }
+        public void Delete(TKey key)
+        {
+            lock (this.gate)
+            {
+                this.page = this.page.Delete(key);
+            }
+        }
 
-    //    public bool TryRead(TKey key, out TValue? value)
-    //    {
-    //        return this.page.TryRead(key, out value);
-    //    }
-    //    #endregion
+        public void Delete(TKey key, TValue value)
+        {
+            lock (this.gate)
+            {
+                this.page = this.page.Delete(key, value);
+            }
+        }
 
-    //    #region writes
-    //    public bool TryDelete(TKey key)
-    //    {
-    //        lock (this.gate)
-    //        {
-    //            var deleted = this.page.TryDelete(key, out var page);
-    //            if (deleted)
-    //            {
-    //                this.page = page;
-    //            }
+        public void Insert(TKey key, TValue value)
+        {
+            lock (this.gate)
+            {
+                this.page = this.page.Insert(key, value);
+            }
+        }
 
-    //            return deleted;
-    //        }
-    //    }
+        public bool ContainsKey(TKey key)
+        {
+            return this.page.ContainsKey(key);
+        }
 
-    //    public bool TryInsert(TKey key, TValue value)
-    //    {
-    //        lock (this.gate)
-    //        {
-    //            var inserted = this.page.TryInsert(key, value, out var page);
-    //            if (inserted)
-    //            {
-    //                this.page = page;
-    //            }
-
-    //            return inserted;
-    //        }
-    //    }
-
-    //    public bool TryUpdate(TKey key, TValue value)
-    //    {
-    //        lock (this.gate)
-    //        {
-    //            var updated = this.page.TryUpdate(key, value, out var page);
-    //            if (updated)
-    //            {
-    //                this.page = page;
-    //            }
-
-    //            return updated;
-    //        }
-    //    }
-    //    #endregion
-    //}
+        public ImmutableArray<TValue> Read(TKey key)
+        {
+            return this.page.Read(key);
+        }
+    }
 }

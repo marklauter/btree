@@ -1,11 +1,8 @@
 ﻿namespace BTrees.Expressions.Ranges
 {
-    public sealed class OpenRange<TKey>
-        where TKey : IComparable<TKey>
+    public sealed record OpenRange<TKey>(TKey Key, BooleanOperator Operator)
+        where TKey : struct, IComparable<TKey>
     {
-        public TKey Key { get; }
-        public BooleanOperator Operator { get; }
-
         public static OpenRange<TKey> Equals(TKey key)
         {
             return new OpenRange<TKey>(key, BooleanOperator.Equal);
@@ -29,12 +26,6 @@
         public static OpenRange<TKey> IsLessThanOrEqual(TKey key)
         {
             return new OpenRange<TKey>(key, BooleanOperator.LessThanOrEqual);
-        }
-
-        private OpenRange(TKey key, BooleanOperator @operator)
-        {
-            this.Key = key;
-            this.Operator = @operator;
         }
     }
 }

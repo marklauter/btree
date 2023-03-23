@@ -5,7 +5,8 @@ using System.Runtime.CompilerServices;
 namespace BTrees.Pages
 {
     [DebuggerDisplay(nameof(DataPage<TKey, TValue>))]
-    internal sealed class DataPage<TKey, TValue>
+    internal readonly struct DataPage<TKey, TValue>
+        : IComparable<DataPage<TKey, TValue>>
         where TKey : struct, IComparable<TKey>
         where TValue : IComparable<TValue>
     {
@@ -106,18 +107,12 @@ namespace BTrees.Pages
         private readonly ImmutableArray<KeyValuesTuple> tuples;
 
         #region ctor
-        public static DataPage<TKey, TValue> Empty { get; } = new DataPage<TKey, TValue>();
+        public static DataPage<TKey, TValue> Empty { get; } = new DataPage<TKey, TValue>(ImmutableArray<KeyValuesTuple>.Empty);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private DataPage(ImmutableArray<KeyValuesTuple> tuples)
         {
             this.tuples = tuples;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DataPage()
-            : this(ImmutableArray<KeyValuesTuple>.Empty)
-        {
         }
         #endregion
 
@@ -209,6 +204,17 @@ namespace BTrees.Pages
             return index >= 0
                 ? this.tuples[index].Values
                 : ImmutableArray<TValue>.Empty;
+        }
+
+        public int CompareTo(DataPage<TKey, TValue> other)
+        {
+            return this.tuples == other.tuples || this.IsEmpty && other.IsEmpty
+                ? 0
+                : this.IsEmpty && !other.IsEmpty
+                    ? -1
+                    : !this.IsEmpty && other.IsEmpty
+                        ? 1
+                        : this.tuples[0].Key.CompareTo(other.tuples[0].Key);
         }
         #endregion
 

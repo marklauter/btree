@@ -1,27 +1,39 @@
-﻿namespace BTrees.Nodes
+﻿using System.Collections.Immutable;
+
+namespace BTrees.Nodes
 {
     internal interface INode<TKey, TValue>
-        where TKey : IComparable<TKey>
+        where TKey : struct, IComparable<TKey>
+        where TValue : IComparable<TValue>
     {
-        int Count { get; }
+        public readonly record struct SplitResult(
+            INode<TKey, TValue> LeftNode,
+            INode<TKey, TValue> RightNode,
+            TKey PivotKey)
+        {
+        }
+
+        int Length { get; }
         bool IsEmpty { get; }
         bool IsFull { get; }
         bool IsOverflow { get; }
         bool IsUnderflow { get; }
         int Size { get; }
-        TKey MinKey { get; }
-        TKey MaxKey { get; }
+        TKey PivotKey { get; }
 
-        int BinarySearch(TKey key);
+        INode<TKey, TValue>? Parent { get; }
+        INode<TKey, TValue>? LeftSibling { get; }
+        INode<TKey, TValue>? RightSibling { get; }
+
         bool ContainsKey(TKey key);
 
         INode<TKey, TValue> Fork();
         INode<TKey, TValue> Merge(INode<TKey, TValue> node);
-        (INode<TKey, TValue> left, INode<TKey, TValue> right, TKey pivotKey) Split();
+        SplitResult Split();
 
-        bool TryDelete(TKey key);
-        bool TryInsert(TKey key, TValue value);
-        bool TryRead(TKey key, out TValue? value);
-        bool TryUpdate(TKey key, TValue value);
+        void Delete(TKey key);
+        void Delete(TKey key, TValue value);
+        void Insert(TKey key, TValue value);
+        ImmutableArray<TValue> Read(TKey key);
     }
 }

@@ -38,7 +38,7 @@
 //            ImmutableArray<INode<TKey, TValue>> subtrees)
 //        {
 //            this.Size = size;
-//            this.halfSize = size / 2;
+//            this.halfSize = size >> 1;
 //            this.keys = keys;
 //            this.subtrees = subtrees;
 //        }
@@ -192,7 +192,7 @@
 
 //        public (PartitionPage<TKey, TValue> leftPage, PartitionPage<TKey, TValue> rightPage, TKey pivotKey) Split()
 //        {
-//            var middle = this.Count / 2;
+//            var middle = this.Count >> 1;
 //            var rightPageStart = middle + 1;
 
 //            return (

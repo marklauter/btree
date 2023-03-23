@@ -32,7 +32,7 @@ namespace BTrees.Tests
             var newPage = page.Insert(1, 1);
             Assert.True(page.IsEmpty);
             Assert.False(newPage.IsEmpty);
-            Assert.True(page != newPage);
+            Assert.True(page.CompareTo(newPage) != 0);
             Assert.Equal(1, newPage.Length);
             Assert.Equal(1, newPage.Count());
         }
@@ -336,11 +336,7 @@ namespace BTrees.Tests
             }
 
             var split = page.Split();
-
-            Assert.NotNull(split.LeftPage);
             Assert.Equal(length >> 1, split.LeftPage.Length);
-
-            Assert.NotNull(split.RightPage);
             if (page.Length % 2 == 0)
             {
                 Assert.Equal(length >> 1, split.RightPage.Length);
