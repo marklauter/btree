@@ -7,15 +7,13 @@ namespace BTrees.Pages
     [DebuggerDisplay(nameof(DataPage<TKey, TValue>))]
     internal readonly struct DataPage<TKey, TValue>
         : IComparable<DataPage<TKey, TValue>>
-        where TKey : struct, IComparable<TKey>
+        where TKey : IComparable<TKey>
         where TValue : IComparable<TValue>
     {
         private readonly record struct KeyValuesTuple(TKey Key, ImmutableArray<TValue> Values)
             : IComparable<KeyValuesTuple>
             , IComparable<TKey>
         {
-            public static KeyValuesTuple Undefined { get; } = new(default, ImmutableArray<TValue>.Empty);
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public KeyValuesTuple(TKey key)
                 : this(key, ImmutableArray<TValue>.Empty)
@@ -32,44 +30,30 @@ namespace BTrees.Pages
             public int Length => this.Values.Length;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int IndexOfValue(TValue value)
+            public int IndexOf(TValue value)
             {
                 return ImmutableArray.BinarySearch(this.Values, value);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool ContainsValue(TValue value)
+            public bool Contains(TValue value)
             {
-                return this.IndexOfValue(value) >= 0;
+                return this.IndexOf(value) >= 0;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValuesTuple InsertValue(int index, TValue value)
+            public KeyValuesTuple Insert(int index, TValue value)
             {
                 return new KeyValuesTuple(this.Key, this.Values.Insert(index, value));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool TryRemoveValue(TValue value, out KeyValuesTuple tuple)
+            public KeyValuesTuple Remove(TValue value)
             {
-                tuple = Undefined;
-
-                if (this.IsEmpty)
-                {
-                    return false;
-                }
-
-                var index = this.IndexOfValue(value);
-                if (index < 0)
-                {
-                    return false;
-                }
-
-                tuple = new KeyValuesTuple(
-                    this.Key,
-                    this.Values.RemoveAt(index));
-
-                return true;
+                var index = this.IndexOf(value);
+                return index < 0
+                    ? this
+                    : new KeyValuesTuple(this.Key, this.Values.RemoveAt(index));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,21 +63,9 @@ namespace BTrees.Pages
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CompareTo(TKey other)
+            public int CompareTo(TKey? other)
             {
                 return this.Key.CompareTo(other);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static explicit operator TKey(KeyValuesTuple tuple)
-            {
-                return tuple.Key;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static explicit operator KeyValuesTuple(TKey key)
-            {
-                return new KeyValuesTuple(key);
             }
         }
 
@@ -156,7 +128,7 @@ namespace BTrees.Pages
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal int IndexOfKey(TKey key)
+        internal int IndexOf(TKey key)
         {
             var low = 0;
             var high = this.tuples.Length - 1;
@@ -189,7 +161,7 @@ namespace BTrees.Pages
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key)
         {
-            return this.IndexOfKey(key) >= 0;
+            return this.IndexOf(key) >= 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -200,7 +172,7 @@ namespace BTrees.Pages
                 return ImmutableArray<TValue>.Empty;
             }
 
-            var index = this.IndexOfKey(key);
+            var index = this.IndexOf(key);
             return index >= 0
                 ? this.tuples[index].Values
                 : ImmutableArray<TValue>.Empty;
@@ -219,10 +191,10 @@ namespace BTrees.Pages
         #endregion
 
         #region write operations
-        public DataPage<TKey, TValue> Delete(TKey key)
+        public DataPage<TKey, TValue> Remove(TKey key)
         {
             var page = this;
-            var keyIndex = this.IndexOfKey(key);
+            var keyIndex = this.IndexOf(key);
             var containsKey = keyIndex >= 0;
             if (containsKey)
             {
@@ -232,19 +204,20 @@ namespace BTrees.Pages
             return page;
         }
 
-        public DataPage<TKey, TValue> Delete(TKey key, TValue value)
+        public DataPage<TKey, TValue> Remove(TKey key, TValue value)
         {
             var page = this;
-            var keyIndex = this.IndexOfKey(key);
+            var keyIndex = this.IndexOf(key);
             var containsKey = keyIndex >= 0;
             if (containsKey)
             {
-                var removed = this.tuples[keyIndex].TryRemoveValue(value, out var tuple);
-                if (removed)
+                var tuple = this.tuples[keyIndex];
+                var removeResult = tuple.Remove(value);
+                if (tuple != removeResult)
                 {
-                    page = tuple.IsEmpty
+                    page = removeResult.IsEmpty
                         ? new DataPage<TKey, TValue>(this.tuples.RemoveAt(keyIndex))
-                        : new DataPage<TKey, TValue>(this.tuples.SetItem(keyIndex, tuple));
+                        : new DataPage<TKey, TValue>(this.tuples.SetItem(keyIndex, removeResult));
                 }
             }
 
@@ -254,16 +227,16 @@ namespace BTrees.Pages
         public DataPage<TKey, TValue> Insert(TKey key, TValue value)
         {
             var page = this;
-            var keyIndex = this.IndexOfKey(key);
+            var keyIndex = this.IndexOf(key);
             var containsKey = keyIndex >= 0;
             if (containsKey)
             {
                 var tuple = this.tuples[keyIndex];
-                var valueIndex = tuple.IndexOfValue(value);
+                var valueIndex = tuple.IndexOf(value);
                 var constainsValue = valueIndex >= 0;
                 if (!constainsValue)
                 {
-                    page = new DataPage<TKey, TValue>(this.tuples.SetItem(keyIndex, tuple.InsertValue(~valueIndex, value)));
+                    page = new DataPage<TKey, TValue>(this.tuples.SetItem(keyIndex, tuple.Insert(~valueIndex, value)));
                 }
             }
             else

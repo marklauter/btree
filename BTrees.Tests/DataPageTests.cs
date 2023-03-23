@@ -164,14 +164,14 @@ namespace BTrees.Tests
 
             for (var key = 0; key < length; ++key)
             {
-                var index = page.IndexOfKey(key);
+                var index = page.IndexOf(key);
                 Assert.Equal(key, index);
             }
 
             var expected = ~page.Length;
             for (var key = length; key < length * 2; ++key)
             {
-                var index = page.IndexOfKey(key);
+                var index = page.IndexOf(key);
                 Assert.Equal(expected, index);
             }
         }
@@ -215,7 +215,7 @@ namespace BTrees.Tests
         [InlineData(13)]
         [InlineData(21)]
         [InlineData(24)]
-        public void Delete_Key_Returns_Page_With_KeyValuesTuple_Removed(int length)
+        public void Remove_Key_Returns_Page_With_KeyValuesTuple_Removed(int length)
         {
             var guids = UniqueRandoms(length);
             var page = DataPage<int, Guid>.Empty;
@@ -227,7 +227,7 @@ namespace BTrees.Tests
             for (var key = 0; key < length; ++key)
             {
                 Assert.True(page.ContainsKey(key));
-                page = page.Delete(key);
+                page = page.Remove(key);
                 Assert.False(page.ContainsKey(key));
             }
         }
@@ -268,7 +268,7 @@ namespace BTrees.Tests
         [InlineData(16)]
         [InlineData(32)]
         [InlineData(64)]
-        public void Delete_KeyValue_Returns_Page_With_Only_The_Specific_Value_Removed(int length)
+        public void Remove_KeyValue_Returns_Page_With_Only_The_Specific_Value_Removed(int length)
         {
             var guids = UniqueRandoms(length);
             var page = DataPage<int, Guid>.Empty;
@@ -287,7 +287,7 @@ namespace BTrees.Tests
                 var first = values[0];
                 var second = values[1];
 
-                page = page.Delete(key, first);
+                page = page.Remove(key, first);
                 values = page.Read(key);
 
                 var actual = Assert.Single(values);
@@ -303,7 +303,7 @@ namespace BTrees.Tests
         [InlineData(16)]
         [InlineData(32)]
         [InlineData(64)]
-        public void Delete_Returns_Same_Page_When_Key_Not_Found(int length)
+        public void Remove_Returns_Same_Page_When_Key_Not_Found(int length)
         {
             var guids = UniqueRandoms(length);
             var page = DataPage<int, Guid>.Empty;
@@ -315,7 +315,7 @@ namespace BTrees.Tests
             for (var key = 1; key < length; key += 2)
             {
                 Assert.False(page.ContainsKey(key));
-                Assert.Equal(page, page.Delete(key));
+                Assert.Equal(page, page.Remove(key));
             }
         }
 
