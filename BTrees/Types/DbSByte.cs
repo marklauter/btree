@@ -1,12 +1,20 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
     public readonly record struct DbSByte(sbyte Value)
         : IDbType<sbyte>
+        , IComparable<DbSByte>
         , IEquatable<DbSByte>
     {
         public int Size => sizeof(sbyte);
 
-        public GiraffeDbType Type => GiraffeDbType.SByte;
+        public DbType Type => DbType.SByte;
+
+        public int CompareTo(DbSByte other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
 
         public int CompareTo(IDbType<sbyte>? other)
         {
@@ -43,6 +51,18 @@
         public static bool operator >=(DbSByte left, DbSByte right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbSByte(sbyte value)
+        {
+            return new(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator sbyte(DbSByte value)
+        {
+            return value.Value;
         }
     }
 }

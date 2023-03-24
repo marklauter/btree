@@ -1,12 +1,20 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
     public readonly record struct DbDateTime(DateTime Value)
         : IDbType<DateTime>
+        , IComparable<DbDateTime>
         , IEquatable<DbDateTime>
     {
         public int Size => sizeof(long);
 
-        public GiraffeDbType Type => GiraffeDbType.DateTime;
+        public DbType Type => DbType.DateTime;
+
+        public int CompareTo(DbDateTime other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
 
         public int CompareTo(IDbType<DateTime>? other)
         {
@@ -43,6 +51,18 @@
         public static bool operator >=(DbDateTime left, DbDateTime right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbDateTime(DateTime value)
+        {
+            return new(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DateTime(DbDateTime value)
+        {
+            return value.Value;
         }
     }
 }

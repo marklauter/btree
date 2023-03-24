@@ -1,12 +1,26 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
     public readonly record struct DbUniqueId(Guid Value)
         : IDbType<Guid>
+        , IComparable<DbUniqueId>
         , IEquatable<DbUniqueId>
     {
         public int Size => 16;
 
-        public GiraffeDbType Type => GiraffeDbType.UniqueId;
+        public DbType Type => DbType.UniqueId;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DbUniqueId NewId()
+        {
+            return new DbUniqueId(Guid.NewGuid());
+        }
+
+        public int CompareTo(DbUniqueId other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
 
         public int CompareTo(IDbType<Guid>? other)
         {
@@ -43,6 +57,18 @@
         public static bool operator >=(DbUniqueId left, DbUniqueId right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator Guid(DbUniqueId value)
+        {
+            return value.Value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbUniqueId(Guid value)
+        {
+            return new DbUniqueId(value);
         }
     }
 }

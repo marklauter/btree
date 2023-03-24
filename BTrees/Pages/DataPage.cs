@@ -1,33 +1,30 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
+﻿using BTrees.Types;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
 {
-    [DebuggerDisplay(nameof(DataPage<TKey, TValue>))]
     internal readonly struct DataPage<TKey, TValue>
         : IComparable<DataPage<TKey, TValue>>
-        where TKey : IComparable<TKey>
-        where TValue : IComparable<TValue>
+        where TKey : IDbType, IComparable<TKey>
+        where TValue : IDbType, IComparable<TValue>
     {
         private readonly record struct KeyValuesTuple(TKey Key, ImmutableArray<TValue> Values)
             : IComparable<KeyValuesTuple>
             , IComparable<TKey>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValuesTuple(TKey key)
-                : this(key, ImmutableArray<TValue>.Empty)
-            {
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public KeyValuesTuple(TKey key, TValue value)
                 : this(key, ImmutableArray<TValue>.Empty.Add(value))
             {
+                this.Size = this.Values.Sum(v => v.Size);
+                this.IsEmpty = this.Values.IsEmpty;
+                this.Length = this.Values.Length;
             }
 
-            public bool IsEmpty => this.Values.IsEmpty;
-            public int Length => this.Values.Length;
+            public bool IsEmpty { get; }
+            public int Length { get; }
+            public int Size { get; }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int IndexOf(TValue value)
@@ -85,12 +82,16 @@ namespace BTrees.Pages
         private DataPage(ImmutableArray<KeyValuesTuple> tuples)
         {
             this.tuples = tuples;
+            this.Size = tuples.Sum(t => t.Size);
+            this.IsEmpty = tuples.IsEmpty;
+            this.Length = tuples.Length;
         }
         #endregion
 
         #region properties
-        public bool IsEmpty => this.tuples.IsEmpty;
-        public int Length => this.tuples.Length;
+        public bool IsEmpty { get; }
+        public int Length { get; }
+        public int Size { get; }
         #endregion
 
         #region structural modifications

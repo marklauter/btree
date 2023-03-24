@@ -1,12 +1,20 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
     public readonly record struct DbMoney(decimal Value)
         : IDbType<decimal>
+        , IComparable<DbMoney>
         , IEquatable<DbMoney>
     {
         public int Size => sizeof(decimal);
 
-        public GiraffeDbType Type => GiraffeDbType.Money;
+        public DbType Type => DbType.Money;
+
+        public int CompareTo(DbMoney other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
 
         public int CompareTo(IDbType<decimal>? other)
         {
@@ -43,6 +51,18 @@
         public static bool operator >=(DbMoney left, DbMoney right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbMoney(decimal value)
+        {
+            return new(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator decimal(DbMoney value)
+        {
+            return value.Value;
         }
     }
 }

@@ -1,12 +1,20 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
     public readonly record struct DbInt64(long Value)
         : IDbType<long>
+        , IComparable<DbInt64>
         , IEquatable<DbInt64>
     {
         public int Size => sizeof(long);
 
-        public GiraffeDbType Type => GiraffeDbType.Int64;
+        public DbType Type => DbType.Int64;
+
+        public int CompareTo(DbInt64 other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
 
         public int CompareTo(IDbType<long>? other)
         {
@@ -43,6 +51,18 @@
         public static bool operator >=(DbInt64 left, DbInt64 right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbInt64(long value)
+        {
+            return new(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator long(DbInt64 value)
+        {
+            return value.Value;
         }
     }
 }

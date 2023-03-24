@@ -1,6 +1,6 @@
 ﻿namespace BTrees.Types
 {
-    public enum GiraffeDbType
+    public enum DbType
     {
 #pragma warning disable CA1720 // Identifier contains type name
         Undefined = 0,

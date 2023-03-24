@@ -1,12 +1,31 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
-    public readonly record struct DbText(string Value)
+    public readonly record struct DbText
         : IDbType<string>
+        , IComparable<DbText>
         , IEquatable<DbText>
     {
-        public int Size => this.Value.Length;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DbText(string value)
+        {
+            this.Value = value;
+            this.Size = String.IsNullOrEmpty(value)
+                ? 0
+                : System.Text.Encoding.UTF8.GetByteCount(this.Value);
+        }
 
-        public GiraffeDbType Type => GiraffeDbType.Text;
+        public string Value { get; }
+
+        public int Size { get; }
+
+        public DbType Type => DbType.Text;
+
+        public int CompareTo(DbText other)
+        {
+            return String.Compare(this.Value, other.Value, StringComparison.OrdinalIgnoreCase);
+        }
 
         public int CompareTo(IDbType<string>? other)
         {
@@ -43,6 +62,18 @@
         public static bool operator >=(DbText left, DbText right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbText(string value)
+        {
+            return new(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator string(DbText value)
+        {
+            return value.Value;
         }
     }
 }

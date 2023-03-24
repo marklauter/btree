@@ -1,13 +1,21 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
     public readonly record struct DbTimeSpan(TimeSpan Value)
         : IDbType<TimeSpan>
+        , IComparable<DbTimeSpan>
         , IEquatable<DbTimeSpan>
     {
         // timespan is stored as ticks
         public int Size => sizeof(long);
 
-        public GiraffeDbType Type => GiraffeDbType.TimeSpan;
+        public DbType Type => DbType.TimeSpan;
+
+        public int CompareTo(DbTimeSpan other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
 
         public int CompareTo(IDbType<TimeSpan>? other)
         {
@@ -44,6 +52,18 @@
         public static bool operator >=(DbTimeSpan left, DbTimeSpan right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbTimeSpan(TimeSpan value)
+        {
+            return new DbTimeSpan(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator TimeSpan(DbTimeSpan value)
+        {
+            return value.Value;
         }
     }
 }

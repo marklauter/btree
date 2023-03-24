@@ -1,12 +1,20 @@
-﻿namespace BTrees.Types
+﻿using System.Runtime.CompilerServices;
+
+namespace BTrees.Types
 {
     public readonly record struct DbInt16(short Value)
         : IDbType<short>
+        , IComparable<DbInt16>
         , IEquatable<DbInt16>
     {
         public int Size => sizeof(short);
 
-        public GiraffeDbType Type => GiraffeDbType.Int16;
+        public DbType Type => DbType.Int16;
+
+        public int CompareTo(DbInt16 other)
+        {
+            return this.Value.CompareTo(other.Value);
+        }
 
         public int CompareTo(IDbType<short>? other)
         {
@@ -43,6 +51,18 @@
         public static bool operator >=(DbInt16 left, DbInt16 right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbInt16(short value)
+        {
+            return new DbInt16(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator short(DbInt16 value)
+        {
+            return value.Value;
         }
     }
 }

@@ -1,13 +1,21 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BTrees.Types
 {
     public readonly record struct DbBinary(byte[] Value)
         : IDbType<byte[]>
+        , IComparable<DbBinary>
         , IEquatable<DbBinary>
     {
         public int Size => this.Value.Length;
-        public GiraffeDbType Type => GiraffeDbType.Binary;
+
+        public DbType Type => DbType.Binary;
+
+        public int CompareTo(DbBinary other)
+        {
+            return this.CompareTo((IDbType<byte[]>)other);
+        }
 
         public int CompareTo(IDbType<byte[]>? other)
         {
@@ -49,6 +57,18 @@ namespace BTrees.Types
         public static bool operator >=(DbBinary left, DbBinary right)
         {
             return left.CompareTo(right) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator byte[](DbBinary value)
+        {
+            return value.Value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static explicit operator DbBinary(byte[] value)
+        {
+            return new DbBinary(value);
         }
     }
 }

@@ -3,7 +3,7 @@
 namespace BTrees.Nodes
 {
     internal interface INode<TKey, TValue>
-        where TKey : struct, IComparable<TKey>
+        where TKey : IComparable<TKey>
         where TValue : IComparable<TValue>
     {
         public readonly record struct SplitResult(
