@@ -10,6 +10,7 @@ namespace BTrees.Pages
         where TValue : IDbType, IComparable<TValue>
     {
         private readonly ImmutableArray<KeyValuesTuple> tuples;
+        private readonly int searchHigh;
 
         #region ctor
         public static DataPage<TKey, TValue> Empty { get; } = new DataPage<TKey, TValue>(ImmutableArray<KeyValuesTuple>.Empty);
@@ -21,6 +22,7 @@ namespace BTrees.Pages
             this.Size = tuples.Sum(t => t.Size);
             this.IsEmpty = tuples.IsEmpty;
             this.Length = tuples.Length;
+            this.searchHigh = tuples.Length - 1;
         }
         #endregion
 
@@ -68,7 +70,7 @@ namespace BTrees.Pages
         internal int IndexOf(TKey key)
         {
             var low = 0;
-            var high = this.tuples.Length - 1;
+            var high = this.searchHigh;
             var tuples = this.tuples;
 
             while (low <= high)
@@ -82,14 +84,8 @@ namespace BTrees.Pages
                     return middle;
                 }
 
-                if (comparison < 0)
-                {
-                    low = middle + 1;
-                    continue;
-                }
-
-                high = middle - 1;
-                continue;
+                high = comparison > 0 ? middle - 1 : high;
+                low = comparison < 0 ? middle + 1 : low;
             }
 
             return ~low;
