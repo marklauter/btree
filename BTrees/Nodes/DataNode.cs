@@ -1,6 +1,5 @@
 ﻿using BTrees.Pages;
 using BTrees.Types;
-using System.Collections.Immutable;
 
 namespace BTrees.Nodes
 {
@@ -14,98 +13,91 @@ namespace BTrees.Nodes
         where TValue : IDbType, IComparable<TValue>
     {
         private readonly object gate = new();
-        private readonly int maxSize;
-        private readonly DataPage<TKey, TValue> page = DataPage<TKey, TValue>.Empty;
+        private static int MaxSize = 1024 * 4;
+        private static int HalfSize = 1024 * 2;
+        private DataPage<TKey, TValue> page = DataPage<TKey, TValue>.Empty;
 
-        private DataNode(int maxSize)
+        public static void SetMaxSize(int size)
         {
-            this.maxSize = maxSize;
+            MaxSize = size;
+            HalfSize = MaxSize >> 1;
+        }
+
+        public DataNode(TKey key, TValue value)
+        {
+            this.page = this.page
+                .Insert(key, value);
         }
 
         private DataNode(
-            int maxSize,
-            INode<TKey, TValue> parent)
-            : this(maxSize)
+            DataPage<TKey, TValue> page,
+            INode<TKey, TValue>? rightSibling)
         {
-            this.Parent = parent;
-        }
-
-        private DataNode(
-            int maxSize,
-            INode<TKey, TValue> parent,
-            INode<TKey, TValue>? leftSibling,
-            INode<TKey, TValue>? rightSibling,
-            DataPage<TKey, TValue> page)
-            : this(maxSize, parent)
-        {
-            this.LeftSibling = leftSibling;
-            this.RightSibling = rightSibling;
             this.page = page;
+            this.RightSibling = rightSibling;
         }
 
         public int Length => this.page.Length;
-        public bool IsEmpty => this.page.IsEmpty;
-        public bool IsFull { get; }
-        public bool IsOverflow { get; }
-        public bool IsUnderflow { get; }
-        public int Size { get; private set; }
-        public TKey PivotKey { get; }
-
-        public INode<TKey, TValue>? Parent { get; }
-        public INode<TKey, TValue>? LeftSibling { get; }
-        public INode<TKey, TValue>? RightSibling { get; }
+        public bool IsOverflow => this.Size >= MaxSize;
+        public bool IsUnderflow => this.Size < HalfSize;
+        public int Size => this.page.Size;
+        public INode<TKey, TValue>? RightSibling { get; private set; }
 
         public INode<TKey, TValue> Fork()
         {
-            throw new NotImplementedException();
-            //return new DataNode<TKey, TValue>(this.maxSize, this.page);
+            return new DataNode<TKey, TValue>(this.page, this.RightSibling);
         }
 
-        public INode<TKey, TValue> Merge(INode<TKey, TValue> node)
+        public void Merge(INode<TKey, TValue> node)
         {
-            throw new NotImplementedException();
-            //return node is DataNode<TKey, TValue> dataNode
-            //    ? (INode<TKey, TValue>)new DataNode<TKey, TValue>(this.maxSize, this.page.Merge(dataNode.page))
-            //    : throw new InvalidOperationException($"{nameof(node)} was wrong type: {node.GetType().Name}. Expected {nameof(DataNode<TKey, TValue>)}");
+            lock (this.gate)
+            {
+                if (node is DataNode<TKey, TValue> dataNode)
+                {
+                    this.page = this.page.Merge(dataNode.page);
+                    this.RightSibling = dataNode.RightSibling;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"{nameof(node)} was wrong type: {node.GetType().Name}. Expected {nameof(DataNode<TKey, TValue>)}");
+                }
+            }
         }
 
-        public INode<TKey, TValue>.SplitResult Split()
+        public INode<TKey, TValue> Split()
         {
-            throw new NotImplementedException();
-            //var split = this.page.Split();
-            //return new INode<TKey, TValue>.SplitResult(
-            //    new DataNode<TKey, TValue>(this.maxSize, split.LeftPage),
-            //    new DataNode<TKey, TValue>(this.maxSize, split.RightPage),
-            //    split.PivotKey);
+            lock (this.gate)
+            {
+                var splitResult = this.page.Split();
+                this.page = splitResult.LeftPage;
+                var node = new DataNode<TKey, TValue>(splitResult.RightPage, this.RightSibling);
+                this.RightSibling = node;
+                return node;
+            }
         }
 
         public void Delete(TKey key)
         {
-            throw new NotImplementedException();
-
-            //lock (this.gate)
-            //{
-            //    this.page = this.page.Remove(key);
-            //}
+            lock (this.gate)
+            {
+                this.page = this.page.Remove(key);
+            }
         }
 
         public void Delete(TKey key, TValue value)
         {
-            throw new NotImplementedException();
-
-            //lock (this.gate)
-            //{
-            //    this.page = this.page.Remove(key, value);
-            //}
+            lock (this.gate)
+            {
+                this.page = this.page.Remove(key, value);
+            }
         }
 
         public void Insert(TKey key, TValue value)
         {
-            throw new NotImplementedException();
-            //lock (this.gate)
-            //{
-            //    this.page = this.page.Insert(key, value);
-            //}
+            lock (this.gate)
+            {
+                this.page = this.page.Insert(key, value);
+            }
         }
 
         public bool ContainsKey(TKey key)
@@ -113,9 +105,33 @@ namespace BTrees.Nodes
             return this.page.ContainsKey(key);
         }
 
-        public ImmutableArray<TValue> Read(TKey key)
+        public IEnumerable<TValue> Read(TKey key)
         {
             return this.page.Read(key);
+        }
+
+        public IEnumerable<(TKey, TValue)> Read(TKey leftBoundingKey, TKey rightBoundingKey)
+        {
+            var page = this.page;
+            var sibling = this.RightSibling;
+            var leftBoundingIndex = page.IndexOf(leftBoundingKey);
+            var rightBoundingIndex = page.IndexOf(rightBoundingKey);
+            leftBoundingIndex = leftBoundingIndex >= 0 ? leftBoundingIndex : ~leftBoundingIndex;
+            rightBoundingIndex = rightBoundingIndex >= 0 ? rightBoundingIndex : ~rightBoundingIndex;
+
+            var values = page.Read(leftBoundingIndex..rightBoundingIndex);
+            return rightBoundingIndex == page.Length && sibling is not null // rightBound key exceeded right edge of the current page
+                ? values.Union(sibling.Read(leftBoundingKey, rightBoundingKey))
+                : values;
+        }
+
+        public int CompareTo(INode<TKey, TValue>? other)
+        {
+            return other is null
+                ? 1
+                : other is DataNode<TKey, TValue> dataNode
+                    ? this.page.CompareTo(dataNode.page)
+                    : throw new InvalidOperationException($"{nameof(other)} was wrong type: {other.GetType().Name}. Expected {nameof(DataNode<TKey, TValue>)}");
         }
     }
 }
