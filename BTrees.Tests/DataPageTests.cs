@@ -335,8 +335,6 @@ namespace BTrees.Tests
             {
                 Assert.Equal((length >> 1) + 1, split.RightPage.Length);
             }
-
-            Assert.Equal(page.Length >> 1, (int)split.PivotKey);
         }
 
         [Theory]
@@ -357,14 +355,15 @@ namespace BTrees.Tests
 
             var split = page.Split();
 
-            for (var key = 0; key < split.PivotKey; ++key)
+            for (var key = 0; key < split.LeftPage.Length; ++key)
             {
                 Assert.True(split.LeftPage.ContainsKey(key));
             }
 
+            var pivotKey = split.RightPage.MinKey;
             for (var i = 0; i < split.RightPage.Length; ++i)
             {
-                var key = split.PivotKey + i;
+                var key = pivotKey + i;
                 Assert.True(split.RightPage.ContainsKey(key));
             }
         }
@@ -386,13 +385,13 @@ namespace BTrees.Tests
             }
 
             var split = page.Split();
-
-            for (var key = split.PivotKey; key < length; ++key)
+            var pivotKey = split.RightPage.MinKey;
+            for (var key = pivotKey; key < length; ++key)
             {
                 Assert.False(split.LeftPage.ContainsKey(key));
             }
 
-            for (var key = 0; key < split.PivotKey; ++key)
+            for (var key = 0; key < pivotKey; ++key)
             {
                 Assert.False(split.RightPage.ContainsKey(key));
             }
