@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbUInt16(ushort value)
+        public static implicit operator DbUInt16(ushort value)
         {
             return new(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator ushort(DbUInt16 value)
+        public static implicit operator ushort(DbUInt16 value)
         {
             return value.Value;
         }

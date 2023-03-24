@@ -65,13 +65,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbText(string value)
+        public static implicit operator DbText(string value)
         {
             return new(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator string(DbText value)
+        public static implicit operator string(DbText value)
         {
             return value.Value;
         }

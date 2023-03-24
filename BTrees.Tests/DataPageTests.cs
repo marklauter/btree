@@ -30,7 +30,7 @@ namespace BTrees.Tests
         public void Insert_Returns_Page()
         {
             var page = DataPage<DbInt32, DbInt32>.Empty;
-            var newPage = page.Insert((DbInt32)1, (DbInt32)1);
+            var newPage = page.Insert(1, 1);
             Assert.True(page.IsEmpty);
             Assert.False(newPage.IsEmpty);
             Assert.True(page.CompareTo(newPage) != 0);
@@ -42,8 +42,8 @@ namespace BTrees.Tests
         public void NewPage_Returned_By_Insert_Contains_Inserted_Key()
         {
             var page = DataPage<DbInt32, DbInt32>.Empty;
-            page = page.Insert((DbInt32)1, (DbInt32)1);
-            Assert.True(page.ContainsKey((DbInt32)1));
+            page = page.Insert(1, 1);
+            Assert.True(page.ContainsKey(1));
         }
 
         [Fact]
@@ -51,8 +51,8 @@ namespace BTrees.Tests
         {
             var expectedValue = "one";
             var page = DataPage<DbInt32, DbText>.Empty
-                .Insert((DbInt32)1, (DbText)expectedValue);
-            var values = page.Read((DbInt32)1);
+                .Insert(1, expectedValue);
+            var values = page.Read(1);
             var actualValue = Assert.Single(values);
             Assert.Equal(expectedValue, (string)actualValue, true);
         }
@@ -63,13 +63,13 @@ namespace BTrees.Tests
             var expectedValue1 = "one";
             var expectedValue2 = "two";
             var page = DataPage<DbInt32, DbText>.Empty
-                .Insert((DbInt32)1, (DbText)expectedValue1)
-                .Insert((DbInt32)1, (DbText)expectedValue2);
+                .Insert(1, expectedValue1)
+                .Insert(1, expectedValue2);
 
             Assert.Equal(1, page.Length);
             Assert.Equal(2, page.Count());
 
-            var values = page.Read((DbInt32)1);
+            var values = page.Read(1);
             Assert.Equal(2, values.Length);
             Assert.Contains((DbText)expectedValue1, values);
             Assert.Contains((DbText)expectedValue2, values);
@@ -79,7 +79,7 @@ namespace BTrees.Tests
         public void Insert_Returns_New_Page_That_Contains_N_Inserted_Elements()
         {
             var length = 5;
-            var page = DataPage<int, int>.Empty;
+            var page = DataPage<DbInt32, DbInt32>.Empty;
             for (var i = 0; i < length; ++i)
             {
                 page = page.Insert(i, i);
@@ -103,12 +103,12 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert((DbInt32)key, guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             for (var key = 0; key < length; ++key)
             {
-                Assert.True(page.ContainsKey((DbInt32)key));
+                Assert.True(page.ContainsKey(key));
             }
         }
 
@@ -123,7 +123,7 @@ namespace BTrees.Tests
         public void ContainsKey_Returns_False(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -146,7 +146,7 @@ namespace BTrees.Tests
         public void IndexOfKey_Returns_Correct_Key(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -177,7 +177,7 @@ namespace BTrees.Tests
         public void Read_Returns_Correct_Values(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -208,7 +208,7 @@ namespace BTrees.Tests
         public void Remove_Key_Returns_Page_With_KeyValuesTuple_Removed(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -232,7 +232,7 @@ namespace BTrees.Tests
         public void Insert_Multiple_Values_Per_Key(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var i = 0; i < length; ++i)
             {
                 var key = i >> 1;
@@ -261,7 +261,7 @@ namespace BTrees.Tests
         public void Remove_KeyValue_Returns_Page_With_Only_The_Specific_Value_Removed(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var i = 0; i < length; ++i)
             {
                 var key = i >> 1;
@@ -296,7 +296,7 @@ namespace BTrees.Tests
         public void Remove_Returns_Same_Page_When_Key_Not_Found(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; key += 2)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -319,7 +319,7 @@ namespace BTrees.Tests
         public void Split_Returns_New_Pages(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -336,7 +336,7 @@ namespace BTrees.Tests
                 Assert.Equal((length >> 1) + 1, split.RightPage.Length);
             }
 
-            Assert.Equal(page.Length >> 1, split.PivotKey);
+            Assert.Equal(page.Length >> 1, (int)split.PivotKey);
         }
 
         [Theory]
@@ -349,7 +349,7 @@ namespace BTrees.Tests
         public void Split_Pages_Contain_Correct_Key_Subsets(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -379,7 +379,7 @@ namespace BTrees.Tests
         public void Split_Pages_Does_Not_Contain_Incorrect_Key_Subsets(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -408,7 +408,7 @@ namespace BTrees.Tests
         public void Merged_Left_Pages_Contain_All_Keys(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);
@@ -433,7 +433,7 @@ namespace BTrees.Tests
         public void Merged_Right_Pages_Contain_All_Keys(int length)
         {
             var guids = UniqueIdFactory.Generate(length);
-            var page = DataPage<int, Guid>.Empty;
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
                 page = page.Insert(key, (Guid)guids[key]);

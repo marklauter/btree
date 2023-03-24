@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbInt64(long value)
+        public static implicit operator DbInt64(long value)
         {
             return new(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator long(DbInt64 value)
+        public static implicit operator long(DbInt64 value)
         {
             return value.Value;
         }

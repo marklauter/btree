@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbUInt32(uint value)
+        public static implicit operator DbUInt32(uint value)
         {
             return new DbUInt32(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator uint(DbUInt32 value)
+        public static implicit operator uint(DbUInt32 value)
         {
             return value.Value;
         }

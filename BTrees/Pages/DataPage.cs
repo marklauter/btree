@@ -4,75 +4,11 @@ using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
 {
-    internal readonly struct DataPage<TKey, TValue>
+    internal readonly partial struct DataPage<TKey, TValue>
         : IComparable<DataPage<TKey, TValue>>
         where TKey : IDbType, IComparable<TKey>
         where TValue : IDbType, IComparable<TValue>
     {
-        private readonly record struct KeyValuesTuple(TKey Key, ImmutableArray<TValue> Values)
-            : IComparable<KeyValuesTuple>
-            , IComparable<TKey>
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValuesTuple(TKey key, TValue value)
-                : this(key, ImmutableArray<TValue>.Empty.Add(value))
-            {
-                this.Size = this.Values.Sum(v => v.Size);
-                this.IsEmpty = this.Values.IsEmpty;
-                this.Length = this.Values.Length;
-            }
-
-            public bool IsEmpty { get; }
-            public int Length { get; }
-            public int Size { get; }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int IndexOf(TValue value)
-            {
-                return ImmutableArray.BinarySearch(this.Values, value);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool Contains(TValue value)
-            {
-                return this.IndexOf(value) >= 0;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValuesTuple Insert(int index, TValue value)
-            {
-                return new KeyValuesTuple(this.Key, this.Values.Insert(index, value));
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public KeyValuesTuple Remove(TValue value)
-            {
-                var index = this.IndexOf(value);
-                return index < 0
-                    ? this
-                    : new KeyValuesTuple(this.Key, this.Values.RemoveAt(index));
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CompareTo(KeyValuesTuple other)
-            {
-                return this.Key.CompareTo(other.Key);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CompareTo(TKey? other)
-            {
-                return this.Key.CompareTo(other);
-            }
-        }
-
-        public readonly record struct SplitResult(
-            DataPage<TKey, TValue> LeftPage,
-            DataPage<TKey, TValue> RightPage,
-            TKey PivotKey)
-        {
-        }
-
         private readonly ImmutableArray<KeyValuesTuple> tuples;
 
         #region ctor

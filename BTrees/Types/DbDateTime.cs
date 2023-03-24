@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbDateTime(DateTime value)
+        public static implicit operator DbDateTime(DateTime value)
         {
             return new(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DateTime(DbDateTime value)
+        public static implicit operator DateTime(DbDateTime value)
         {
             return value.Value;
         }

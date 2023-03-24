@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbUInt64(ulong value)
+        public static implicit operator DbUInt64(ulong value)
         {
             return new DbUInt64(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator ulong(DbUInt64 value)
+        public static implicit operator ulong(DbUInt64 value)
         {
             return value.Value;
         }

@@ -55,13 +55,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbTimeSpan(TimeSpan value)
+        public static implicit operator DbTimeSpan(TimeSpan value)
         {
             return new DbTimeSpan(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator TimeSpan(DbTimeSpan value)
+        public static implicit operator TimeSpan(DbTimeSpan value)
         {
             return value.Value;
         }

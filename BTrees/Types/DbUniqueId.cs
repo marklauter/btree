@@ -60,13 +60,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator Guid(DbUniqueId value)
+        public static implicit operator Guid(DbUniqueId value)
         {
             return value.Value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbUniqueId(Guid value)
+        public static implicit operator DbUniqueId(Guid value)
         {
             return new DbUniqueId(value);
         }

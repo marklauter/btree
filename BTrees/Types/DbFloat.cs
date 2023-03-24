@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbFloat(float value)
+        public static implicit operator DbFloat(float value)
         {
             return new(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator float(DbFloat value)
+        public static implicit operator float(DbFloat value)
         {
             return value.Value;
         }

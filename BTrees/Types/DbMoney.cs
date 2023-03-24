@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbMoney(decimal value)
+        public static implicit operator DbMoney(decimal value)
         {
             return new(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator decimal(DbMoney value)
+        public static implicit operator decimal(DbMoney value)
         {
             return value.Value;
         }

@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbByte(byte value)
+        public static implicit operator DbByte(byte value)
         {
             return new(value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator byte(DbByte value)
+        public static implicit operator byte(DbByte value)
         {
             return value.Value;
         }

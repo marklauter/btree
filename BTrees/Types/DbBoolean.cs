@@ -54,13 +54,13 @@ namespace BTrees.Types
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator bool(DbBoolean value)
+        public static implicit operator bool(DbBoolean value)
         {
             return value.Value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static explicit operator DbBoolean(bool value)
+        public static implicit operator DbBoolean(bool value)
         {
             return new DbBoolean(value);
         }
