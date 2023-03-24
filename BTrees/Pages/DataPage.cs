@@ -11,6 +11,7 @@ namespace BTrees.Pages
     {
         private readonly ImmutableArray<KeyValuesTuple> tuples;
         private readonly int searchHigh;
+        private readonly TKey? minKey;
 
         #region ctor
         public static DataPage<TKey, TValue> Empty { get; } = new DataPage<TKey, TValue>(ImmutableArray<KeyValuesTuple>.Empty);
@@ -23,6 +24,7 @@ namespace BTrees.Pages
             this.IsEmpty = tuples.IsEmpty;
             this.Length = tuples.Length;
             this.searchHigh = tuples.Length - 1;
+            this.minKey = tuples.IsEmpty ? default : tuples[0].Key;
         }
         #endregion
 
@@ -30,6 +32,9 @@ namespace BTrees.Pages
         public bool IsEmpty { get; }
         public int Length { get; }
         public int Size { get; }
+        public TKey MinKey => this.IsEmpty || this.minKey is null
+            ? throw new InvalidOperationException("Empty DataPage doesn't have MinKey")
+            : this.minKey;
         #endregion
 
         #region structural modifications
@@ -41,13 +46,12 @@ namespace BTrees.Pages
                 throw new InvalidOperationException("Can't split page with less than two elements.");
             }
 
-            var length = this.tuples.Length;
+            var length = this.Length;
             var middle = length >> 1;
 
             return new SplitResult(
                 new DataPage<TKey, TValue>(this.tuples[..middle]),
-                new DataPage<TKey, TValue>(this.tuples[middle..length]),
-                this.tuples[middle].Key);
+                new DataPage<TKey, TValue>(this.tuples[middle..length]));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -111,15 +115,25 @@ namespace BTrees.Pages
                 : ImmutableArray<TValue>.Empty;
         }
 
+        public IEnumerable<(TKey, TValue)> Read(Range range)
+        {
+            return this.tuples[range]
+               .SelectMany(
+                tuple => tuple.Values,
+                (tuple, value) => (tuple.Key, value));
+        }
+
         public int CompareTo(DataPage<TKey, TValue> other)
         {
-            return this.tuples == other.tuples || this.IsEmpty && other.IsEmpty
+#pragma warning disable CS8602 // Dereference of a possibly null reference. - this.minKey is not null if this.IsEmpty is false
+            return this.tuples == other.tuples
                 ? 0
                 : this.IsEmpty && !other.IsEmpty
                     ? -1
                     : !this.IsEmpty && other.IsEmpty
                         ? 1
-                        : this.tuples[0].Key.CompareTo(other.tuples[0].Key);
+                        : this.minKey.CompareTo(other.minKey);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
         #endregion
 

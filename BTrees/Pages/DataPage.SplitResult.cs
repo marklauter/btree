@@ -7,8 +7,7 @@ namespace BTrees.Pages
     {
         public readonly record struct SplitResult(
             DataPage<TKey, TValue> LeftPage,
-            DataPage<TKey, TValue> RightPage,
-            TKey PivotKey)
+            DataPage<TKey, TValue> RightPage)
         {
         }
     }
