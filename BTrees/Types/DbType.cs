@@ -2,7 +2,6 @@
 {
     public enum DbType
     {
-#pragma warning disable CA1720 // Identifier contains type name
         Undefined = 0,
 
         #region logical
@@ -50,6 +49,9 @@
         Geometry = 27, // not implemented
         #endregion
 
-#pragma warning restore CA1720 // Identifier contains type name
+        #region objects
+
+        Graph = 28, // not implemented
+        #endregion
     }
 }

@@ -6,3 +6,4 @@
 using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage("Design", "CA1000:Do not declare static members on generic types", Justification = "what ever")]
+[assembly: SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "i mean it's part of an enum.. come on.")]
