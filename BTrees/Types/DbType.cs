@@ -51,7 +51,7 @@
 
         #region objects
 
-        Graph = 28, // not implemented
+        GraphML = 28, // not implemented
         #endregion
     }
 }
