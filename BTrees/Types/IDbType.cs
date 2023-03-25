@@ -1,5 +1,7 @@
 ﻿namespace BTrees.Types
 {
+    // todo: checkout System.BitConverter
+
     public interface IDbType
     {
         DbType Type { get; }
