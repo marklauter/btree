@@ -1,4 +1,4 @@
-﻿namespace BTrees.Tests
+﻿namespace BTrees.Tests.Nodes
 {
     public sealed class DataNodeTests
     {

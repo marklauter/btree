@@ -1,7 +1,7 @@
 ﻿using BTrees.Pages;
 using BTrees.Types;
 
-namespace BTrees.Tests
+namespace BTrees.Tests.Pages
 {
     public sealed class DataPageTests
     {
@@ -126,7 +126,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             for (var key = length; key < length * 2; ++key)
@@ -149,7 +149,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             for (var key = 0; key < length; ++key)
@@ -180,7 +180,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             for (var key = 0; key < length; ++key)
@@ -211,7 +211,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             for (var key = 0; key < length; ++key)
@@ -299,7 +299,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; key += 2)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             for (var key = 1; key < length; key += 2)
@@ -322,7 +322,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             var split = page.Split();
@@ -350,7 +350,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             var split = page.Split();
@@ -381,7 +381,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             var split = page.Split();
@@ -410,7 +410,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             var split = page.Split();
@@ -435,7 +435,7 @@ namespace BTrees.Tests
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                page = page.Insert(key, (Guid)guids[key]);
+                page = page.Insert(key, guids[key]);
             }
 
             var split = page.Split();
@@ -444,6 +444,26 @@ namespace BTrees.Tests
             for (var key = 0; key < length; ++key)
             {
                 Assert.True(merged.ContainsKey(key));
+            }
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void Size_Matches_Prediction(int length)
+        {
+            var size = 0;
+            var guids = UniqueIdFactory.Generate(length);
+            var page = DataPage<DbInt32, DbUniqueId>.Empty;
+            for (var key = 0; key < length; ++key)
+            {
+                size += sizeof(uint) + sizeof(long);
+                page = page.Insert(key, guids[key]);
+                Assert.Equal(size, page.Size);
             }
         }
     }
