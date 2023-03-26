@@ -15,7 +15,7 @@ namespace BTrees.Pages
             {
                 this.Key = key;
                 this.Values = values;
-                this.Size = values.Sum(v => v.Size);
+                this.Size = key.Size + values.Sum(v => v.Size);
                 this.IsEmpty = values.IsEmpty;
                 this.Length = values.Length;
             }
