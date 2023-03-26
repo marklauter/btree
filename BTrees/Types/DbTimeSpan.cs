@@ -35,7 +35,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value);
         }
 
         public static bool operator <(DbTimeSpan left, DbTimeSpan right)
