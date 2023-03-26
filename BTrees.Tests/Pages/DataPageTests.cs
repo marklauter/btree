@@ -1,5 +1,6 @@
 ﻿using BTrees.Pages;
 using BTrees.Types;
+using System.Text;
 
 namespace BTrees.Tests.Pages
 {
@@ -461,8 +462,37 @@ namespace BTrees.Tests.Pages
             var page = DataPage<DbInt32, DbUniqueId>.Empty;
             for (var key = 0; key < length; ++key)
             {
-                size += sizeof(uint) + sizeof(long);
+                size += DbInt32.Size + DbUniqueId.Size;
                 page = page.Insert(key, guids[key]);
+                Assert.Equal(size, page.Size);
+            }
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(8)]
+        [InlineData(13)]
+        [InlineData(21)]
+        [InlineData(24)]
+        public void Size_Matches_Prediction_With_Variable_Size_Type(int length)
+        {
+            var builder = new StringBuilder();
+            for (var i = 0; i < length; ++i)
+            {
+                builder = builder.Append('x');
+            }
+
+            var s = builder.ToString();
+            builder = builder.Clear();
+            var size = 0;
+            var page = DataPage<DbInt32, DbText>.Empty;
+            for (var key = 0; key < length; ++key)
+            {
+                builder = builder.Append(s);
+                var value = builder.ToString();
+                size += DbInt32.Size + DbInt32.Size + value.Length;
+                page = page.Insert(key, value);
                 Assert.Equal(size, page.Size);
             }
         }
