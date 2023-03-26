@@ -1,70 +1,286 @@
-﻿namespace BTrees.Tests.Nodes
+﻿using BTrees.Nodes;
+using BTrees.Types;
+
+namespace BTrees.Tests.Nodes
 {
     public sealed class DataNodeTests
     {
+        private readonly int nodeSize = 1024 * 2;
 
+        public DataNodeTests()
+        {
+            DataNode<DbInt32, DbInt32>.SetMaxSize(this.nodeSize);
+        }
 
-        //        [Fact]
-        //        public void Empty_Node_Has_Correct_Size()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            Assert.Equal(size, node.Size);
-        //        }
+        [Fact]
+        public void MaxSize_IsSet()
+        {
+            Assert.Equal(this.nodeSize, DataNode<DbInt32, DbInt32>.MaxSize);
+        }
 
-        //        [Fact]
-        //        public void Empty_Node_Has_Correct_Count()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            Assert.Equal(0, node.Count);
-        //        }
+        [Fact]
+        public void HalfSize_IsSet()
+        {
+            Assert.Equal(this.nodeSize >> 1, DataNode<DbInt32, DbInt32>.HalfSize);
+        }
 
-        //        [Fact]
-        //        public void Empty_Node_IsEmpty()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            Assert.True(node.IsEmpty);
-        //        }
+        [Fact]
+        public void ContainsKey_Is_True_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            Assert.True(node.ContainsKey(key));
+        }
 
-        //        [Fact]
-        //        public void Node_Contains_Key_After_Insert()
-        //        {
-        //            var size = 10;
-        //            var key = 1;
-        //            var value = 1;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            node.Insert(key, value);
+        [Fact]
+        public void ContainsKey_Is_True_After_Insert()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            Assert.True(node.ContainsKey(key1));
+            Assert.True(node.ContainsKey(key2));
+        }
 
-        //            Assert.True(node.ContainsKey(key));
-        //        }
+        [Fact]
+        public void IsUnderflow_Is_True_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            Assert.True(node.IsUnderflow);
+        }
 
-        //        [Fact]
-        //        public void Node_Contains_Value_After_Insert()
-        //        {
-        //            var size = 10;
-        //            var key = 1;
-        //            var value = 1;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            node.Insert(key, value);
+        [Fact]
+        public void IsOverflow_Is_False_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            Assert.False(node.IsOverflow);
+        }
 
-        //            Assert.True(node.TryRead(key, out var actualValue));
-        //            Assert.Equal(value, actualValue);
-        //        }
+        [Fact]
+        public void Read_Returns_Value_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            var actual = node.Read(key);
+            Assert.Contains(value, actual);
+            Assert.Contains(value, actual);
+        }
 
-        //        [Fact]
-        //        public void Node_Contains_N_Elements_After_Inserts()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
+        [Fact]
+        public void Read_Returns_Inserted_Values_After_Insert()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            Assert.True(node.ContainsKey(key1));
+            Assert.True(node.ContainsKey(key2));
+        }
 
-        //            Assert.Equal(size, node.Count);
-        //        }
+        [Fact]
+        public void Size_Is_Correct_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            Assert.Equal(DbInt32.Size * 2, node.Size);
+        }
+
+        [Fact]
+        public void Size_Is_Correct_From_After_Insert()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            Assert.Equal(DbInt32.Size * 4, node.Size);
+        }
+
+        [Fact]
+        public void Length_Is_Correct_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            Assert.Equal(1, node.Length);
+        }
+
+        [Fact]
+        public void Length_Is_Correct_From_After_Insert()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            Assert.Equal(2, node.Length);
+        }
+
+        [Fact]
+        public void Length_Is_Correct_From_After_Insert_With_Duplicate_Key()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var value2 = (DbInt32)2;
+            node.Insert(key1, value2);
+            Assert.Equal(1, node.Length);
+        }
+
+        [Fact]
+        public void Count_Is_Correct_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            Assert.Equal(1, node.Count());
+        }
+
+        [Fact]
+        public void Count_Is_Correct_From_After_Insert()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            Assert.Equal(2, node.Count());
+        }
+
+        [Fact]
+        public void Count_Is_Correct_From_After_Insert_With__Duplicate_Key()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var value2 = (DbInt32)2;
+            node.Insert(key1, value2);
+            Assert.Equal(2, node.Count());
+        }
+
+        [Fact]
+        public void RightSibling_Is_Null_From_Newly_Constructed()
+        {
+            var key = (DbInt32)1;
+            var value = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key, value);
+            Assert.Null(node.RightSibling);
+        }
+
+        [Fact]
+        public void Split_Returns_Right_Node()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            var rightNode = node.Split();
+            Assert.NotNull(rightNode);
+        }
+
+        [Fact]
+        public void Split_Returns_Right_Node_That_Matches_RightSibling()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            var rightNode = node.Split();
+            Assert.Equal(rightNode, node.RightSibling);
+        }
+
+        [Fact]
+        public void Split_RightSibling_ContainsKey()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            var rightNode = node.Split();
+
+            Assert.True(node.ContainsKey(key1));
+            Assert.False(node.ContainsKey(key2));
+
+            Assert.False(rightNode.ContainsKey(key1));
+            Assert.True(rightNode.ContainsKey(key2));
+        }
+
+        [Fact]
+        public void Split_Twice_RightSibling_Has_RightSibling()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node1 = new DataNode<DbInt32, DbInt32>(key1, value1);
+
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node1.Insert(key2, value2);
+
+            var key3 = (DbInt32)3;
+            var value3 = (DbInt32)3;
+            node1.Insert(key3, value3);
+
+            var node2 = node1.Split();
+            Assert.Equal(node2, node1.RightSibling);
+
+            var node3 = node2.Split();
+            Assert.Equal(node3, node2.RightSibling);
+
+            Assert.Equal(node2, node1.RightSibling);
+            Assert.NotEqual(node3, node1.RightSibling);
+        }
+
+        [Fact]
+        public void Split_Twice_ContainsKey()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node1 = new DataNode<DbInt32, DbInt32>(key1, value1);
+
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node1.Insert(key2, value2);
+
+            var key3 = (DbInt32)3;
+            var value3 = (DbInt32)3;
+            node1.Insert(key3, value3);
+
+            var node2 = node1.Split();
+            var node3 = node2.Split();
+
+            Assert.True(node1.ContainsKey(key1));
+            Assert.False(node1.ContainsKey(key2));
+            Assert.False(node1.ContainsKey(key3));
+
+            Assert.False(node2.ContainsKey(key1));
+            Assert.True(node2.ContainsKey(key2));
+            Assert.False(node2.ContainsKey(key3));
+
+            Assert.False(node3.ContainsKey(key1));
+            Assert.False(node3.ContainsKey(key2));
+            Assert.True(node3.ContainsKey(key3));
+        }
 
         //        [Theory]
         //        [InlineData(1)]
@@ -99,125 +315,6 @@
         //            {
         //                Assert.True(node.TryRead(rndArray[i], out var actualValue));
         //                Assert.Equal(rndArray[i], actualValue);
-        //            }
-        //        }
-
-        //        [Fact]
-        //        public void Node_Contains_N_Elements_After_Delete()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
-
-        //            _ = node.TryDelete(5);
-
-        //            Assert.Equal(size - 1, node.Count);
-        //        }
-
-        //        [Fact]
-        //        public void Node_Contains_Delete_Removes_Only_Appropriate_Element()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
-
-        //            _ = node.TryDelete(5);
-
-        //            Assert.False(node.ContainsKey(5));
-
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                if (i != 5)
-        //                {
-        //                    Assert.True(node.TryRead(i, out var value));
-        //                    Assert.Equal(i, value);
-        //                }
-        //            }
-        //        }
-
-        //        [Fact]
-        //        public void Node_Contains_New_Value_After_Update()
-        //        {
-        //            var size = 10;
-        //            var key = 1;
-        //            var value1 = 1;
-        //            var value2 = 1;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            node.Insert(key, value1);
-        //            node.Update(key, value2);
-
-        //            Assert.True(node.TryRead(key, out var actualValue));
-        //            Assert.Equal(value2, actualValue);
-        //        }
-
-        //        [Fact]
-        //        public void Split_Returns_New_Nodes()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
-
-        //            var (left, right, pivotKey) = node.Split();
-
-        //            Assert.NotNull(left);
-        //            Assert.Equal(size / 2, left.Count);
-
-        //            Assert.NotNull(right);
-        //            Assert.Equal(size / 2, right.Count);
-
-        //            Assert.Equal(5, pivotKey);
-        //        }
-
-        //        [Fact]
-        //        public void Split_Nodes_Contain_Correct_Key_Subsets()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
-
-        //            var (left, right, pivotKey) = node.Split();
-        //            for (var i = 0; i < size / 2; ++i)
-        //            {
-        //                Assert.True(left.ContainsKey(i));
-        //            }
-
-        //            for (var i = pivotKey; i < pivotKey + size / 2; ++i)
-        //            {
-        //                Assert.True(right.ContainsKey(i));
-        //            }
-        //        }
-
-        //        [Fact]
-        //        public void Split_Nodes_Does_Not_Contain_Incorrect_Key_Subsets()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
-
-        //            var (left, right, pivotKey) = node.Split();
-        //            for (var i = 0; i < size / 2; ++i)
-        //            {
-        //                Assert.False(right.ContainsKey(i));
-        //            }
-
-        //            for (var i = pivotKey; i < pivotKey + size / 2; ++i)
-        //            {
-        //                Assert.False(left.ContainsKey(i));
         //            }
         //        }
 
