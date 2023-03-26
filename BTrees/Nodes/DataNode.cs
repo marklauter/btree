@@ -1,5 +1,6 @@
 ﻿using BTrees.Pages;
 using BTrees.Types;
+using System.Runtime.CompilerServices;
 
 namespace BTrees.Nodes
 {
@@ -13,22 +14,16 @@ namespace BTrees.Nodes
         where TValue : IDbType, IComparable<TValue>
     {
         private readonly object gate = new();
-        private static int MaxSize = 1024 * 4;
-        private static int HalfSize = 1024 * 2;
         private DataPage<TKey, TValue> page = DataPage<TKey, TValue>.Empty;
 
-        public static void SetMaxSize(int size)
-        {
-            MaxSize = size;
-            HalfSize = MaxSize >> 1;
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DataNode(TKey key, TValue value)
         {
             this.page = this.page
                 .Insert(key, value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private DataNode(
             DataPage<TKey, TValue> page,
             INode<TKey, TValue>? rightSibling)
@@ -36,13 +31,27 @@ namespace BTrees.Nodes
             this.page = page;
             this.RightSibling = rightSibling;
         }
-
+        public static int MaxSize { get; private set; } = 1024 * 4;
+        public static int HalfSize { get; private set; } = 1024 * 2;
         public int Length => this.page.Length;
         public bool IsOverflow => this.Size >= MaxSize;
         public bool IsUnderflow => this.Size < HalfSize;
         public int Size => this.page.Size;
         public INode<TKey, TValue>? RightSibling { get; private set; }
 
+        public static void SetMaxSize(int size)
+        {
+            MaxSize = size;
+            HalfSize = MaxSize >> 1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Count()
+        {
+            return this.page.Count();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public INode<TKey, TValue> Fork()
         {
             return new DataNode<TKey, TValue>(this.page, this.RightSibling);
@@ -100,11 +109,13 @@ namespace BTrees.Nodes
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key)
         {
             return this.page.ContainsKey(key);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<TValue> Read(TKey key)
         {
             return this.page.Read(key);
@@ -125,6 +136,7 @@ namespace BTrees.Nodes
                 : values;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(INode<TKey, TValue>? other)
         {
             return other is null

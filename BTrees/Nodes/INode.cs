@@ -12,6 +12,8 @@
 
         INode<TKey, TValue>? RightSibling { get; }
 
+        int Count();
+
         bool ContainsKey(TKey key);
 
         INode<TKey, TValue> Fork();
@@ -25,9 +27,13 @@
         INode<TKey, TValue> Split();
 
         void Delete(TKey key);
+
         void Delete(TKey key, TValue value);
+
         void Insert(TKey key, TValue value);
+
         IEnumerable<TValue> Read(TKey key);
+
         IEnumerable<(TKey, TValue)> Read(TKey leftBound, TKey rightBound);
     }
 }
