@@ -7,9 +7,13 @@ namespace BTrees.Types
         , IComparable<DbDecimal>
         , IEquatable<DbDecimal>
     {
-        public int Size => sizeof(decimal);
+        public const int Size = sizeof(decimal);
 
-        public DbType Type => DbType.Decimal;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.Decimal;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbDecimal other)
         {
@@ -30,7 +34,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value);
         }
 
         public static bool operator <(DbDecimal left, DbDecimal right)

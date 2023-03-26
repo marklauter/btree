@@ -7,9 +7,13 @@ namespace BTrees.Types
         , IComparable<DbUInt64>
         , IEquatable<DbUInt64>
     {
-        public int Size => sizeof(ulong);
+        public const int Size = sizeof(ulong);
 
-        public DbType Type => DbType.UInt64;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.UInt64;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(IDbType<ulong>? other)
         {
@@ -25,7 +29,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value);
         }
 
         public int CompareTo(DbUInt64 other)

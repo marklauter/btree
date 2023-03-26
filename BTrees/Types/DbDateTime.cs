@@ -7,9 +7,13 @@ namespace BTrees.Types
         , IComparable<DbDateTime>
         , IEquatable<DbDateTime>
     {
-        public int Size => sizeof(long);
+        public const int Size = sizeof(long);
 
-        public DbType Type => DbType.DateTime;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.DateTime;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbDateTime other)
         {
@@ -30,7 +34,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value);
         }
 
         public static bool operator <(DbDateTime left, DbDateTime right)

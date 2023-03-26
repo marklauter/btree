@@ -11,16 +11,21 @@ namespace BTrees.Types
         public DbText(string value)
         {
             this.Value = value;
-            this.Size = String.IsNullOrEmpty(value)
-                ? 0
-                : System.Text.Encoding.UTF8.GetByteCount(this.Value);
+            this.size = String.IsNullOrEmpty(value)
+                ? Size
+                : Size + System.Text.Encoding.UTF8.GetByteCount(this.Value);
         }
 
         public string Value { get; }
 
-        public int Size { get; }
+        public const int Size = sizeof(int);
 
-        public DbType Type => DbType.Text;
+        private readonly int size;
+        int IDbType.Size => this.size;
+
+        public const DbType Type = DbType.Text;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbText other)
         {
@@ -41,7 +46,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value, ((IDbType)this).Size);
         }
 
         public static bool operator <(DbText left, DbText right)

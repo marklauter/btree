@@ -7,9 +7,13 @@ namespace BTrees.Types
         , IComparable<DbMoney>
         , IEquatable<DbMoney>
     {
-        public int Size => sizeof(decimal);
+        public const int Size = sizeof(decimal);
 
-        public DbType Type => DbType.Money;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.Money;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbMoney other)
         {
@@ -30,7 +34,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value);
         }
 
         public static bool operator <(DbMoney left, DbMoney right)

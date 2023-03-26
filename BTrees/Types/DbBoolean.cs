@@ -7,9 +7,13 @@ namespace BTrees.Types
         , IComparable<DbBoolean>
         , IEquatable<DbBoolean>
     {
-        public int Size => sizeof(bool);
+        public const int Size = sizeof(bool);
 
-        public DbType Type => DbType.Boolean;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.Boolean;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbBoolean other)
         {
@@ -30,7 +34,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value);
         }
 
         public static bool operator <(DbBoolean left, DbBoolean right)

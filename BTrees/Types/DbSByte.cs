@@ -7,9 +7,13 @@ namespace BTrees.Types
         , IComparable<DbSByte>
         , IEquatable<DbSByte>
     {
-        public int Size => sizeof(sbyte);
+        public const int Size = sizeof(sbyte);
 
-        public DbType Type => DbType.SByte;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.SByte;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbSByte other)
         {
@@ -30,7 +34,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type);
+            return HashCode.Combine(Type, this.Value);
         }
 
         public static bool operator <(DbSByte left, DbSByte right)

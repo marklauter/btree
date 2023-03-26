@@ -8,9 +8,13 @@ namespace BTrees.Types
         , IComparable<DbBinary>
         , IEquatable<DbBinary>
     {
-        public int Size => this.Value.Length;
+        public const int Size = sizeof(int);
 
-        public DbType Type => DbType.Binary;
+        int IDbType.Size => Size + this.Value.Length;
+
+        public const DbType Type = DbType.Binary;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbBinary other)
         {
@@ -36,7 +40,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Value, this.Type, this.Size);
+            return HashCode.Combine(Type, this.Value, ((IDbType)this).Size);
         }
 
         public static bool operator <(DbBinary left, DbBinary right)

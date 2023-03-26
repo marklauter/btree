@@ -7,9 +7,13 @@ namespace BTrees.Types
         , IComparable<DbUniqueId>
         , IEquatable<DbUniqueId>
     {
-        public int Size => 16;
+        public const int Size = 16;
 
-        public DbType Type => DbType.UniqueId;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.UniqueId;
+
+        DbType IDbType.Type => Type;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DbUniqueId NewId()

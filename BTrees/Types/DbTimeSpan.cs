@@ -8,9 +8,13 @@ namespace BTrees.Types
         , IEquatable<DbTimeSpan>
     {
         // timespan is stored as ticks
-        public int Size => sizeof(long);
+        public const int Size = sizeof(long);
 
-        public DbType Type => DbType.TimeSpan;
+        int IDbType.Size => Size;
+
+        public const DbType Type = DbType.TimeSpan;
+
+        DbType IDbType.Type => Type;
 
         public int CompareTo(DbTimeSpan other)
         {
