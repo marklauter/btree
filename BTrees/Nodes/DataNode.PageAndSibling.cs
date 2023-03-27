@@ -3,12 +3,13 @@ using BTrees.Types;
 
 namespace BTrees.Nodes
 {
-
     internal sealed partial class DataNode<TKey, TValue> where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
-        private readonly record struct PageAndSibling(DataPage<TKey, TValue> Page, INode<TKey, TValue>? RightSibling)
+        private record PageAndSibling(DataPage<TKey, TValue> Page, INode<TKey, TValue>? RightSibling)
         {
         }
+
+        private PageAndSibling pageAndSibling = new(DataPage<TKey, TValue>.Empty, null);
     }
 }
