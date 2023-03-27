@@ -26,14 +26,14 @@
         /// <returns>Returns new right node with sibling pointers set and the new pivot key is TKeys[0]. </returns>
         INode<TKey, TValue> Split();
 
-        void Delete(TKey key);
+        void Remove(TKey key);
 
-        void Delete(TKey key, TValue value);
+        void Remove(TKey key, TValue value);
 
         void Insert(TKey key, TValue value);
 
         IEnumerable<TValue> Read(TKey key);
 
-        IEnumerable<(TKey, TValue)> Read(TKey leftBound, TKey rightBound);
+        IEnumerable<(TKey Key, TValue Value)> Read(TKey leftBound, TKey rightBound);
     }
 }

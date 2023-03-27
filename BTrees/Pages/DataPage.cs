@@ -115,7 +115,7 @@ namespace BTrees.Pages
                 : ImmutableArray<TValue>.Empty;
         }
 
-        public IEnumerable<(TKey, TValue)> Read(Range range)
+        public IEnumerable<(TKey Key, TValue Value)> Read(Range range)
         {
             return this.tuples[range]
                .SelectMany(

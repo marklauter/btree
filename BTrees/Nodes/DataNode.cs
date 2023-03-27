@@ -85,7 +85,7 @@ namespace BTrees.Nodes
             }
         }
 
-        public void Delete(TKey key)
+        public void Remove(TKey key)
         {
             lock (this.gate)
             {
@@ -93,7 +93,7 @@ namespace BTrees.Nodes
             }
         }
 
-        public void Delete(TKey key, TValue value)
+        public void Remove(TKey key, TValue value)
         {
             lock (this.gate)
             {
@@ -121,14 +121,16 @@ namespace BTrees.Nodes
             return this.page.Read(key);
         }
 
-        public IEnumerable<(TKey, TValue)> Read(TKey leftBoundingKey, TKey rightBoundingKey)
+        public IEnumerable<(TKey Key, TValue Value)> Read(TKey leftBoundingKey, TKey rightBoundingKey)
         {
             var page = this.page;
             var sibling = this.RightSibling;
+
             var leftBoundingIndex = page.IndexOf(leftBoundingKey);
             var rightBoundingIndex = page.IndexOf(rightBoundingKey);
+
             leftBoundingIndex = leftBoundingIndex >= 0 ? leftBoundingIndex : ~leftBoundingIndex;
-            rightBoundingIndex = rightBoundingIndex >= 0 ? rightBoundingIndex : ~rightBoundingIndex;
+            rightBoundingIndex = (rightBoundingIndex >= 0 ? rightBoundingIndex : ~rightBoundingIndex) + 1;
 
             var values = page.Read(leftBoundingIndex..rightBoundingIndex);
             return rightBoundingIndex == page.Length && sibling is not null // rightBound key exceeded right edge of the current page
