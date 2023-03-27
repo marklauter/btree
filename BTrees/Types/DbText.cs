@@ -21,7 +21,7 @@ namespace BTrees.Types
         public const int Size = sizeof(int);
 
         private readonly int size;
-        int IDbType.Size => this.size;
+        int ISizeable.Size => this.size;
 
         public const DbType Type = DbType.Text;
 

@@ -10,7 +10,7 @@ namespace BTrees.Types
         // timespan is stored as ticks
         public const int Size = sizeof(long);
 
-        int IDbType.Size => Size;
+        int ISizeable.Size => Size;
 
         public const DbType Type = DbType.TimeSpan;
 

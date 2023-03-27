@@ -9,7 +9,7 @@ namespace BTrees.Types
     {
         public const int Size = sizeof(byte);
 
-        int IDbType.Size => Size;
+        int ISizeable.Size => Size;
 
         public const DbType Type = DbType.Byte;
 
