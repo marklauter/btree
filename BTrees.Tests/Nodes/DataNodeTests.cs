@@ -282,6 +282,63 @@ namespace BTrees.Tests.Nodes
             Assert.True(node3.ContainsKey(key3));
         }
 
+        [Fact]
+        public void Merge_Contains_All_Keys()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            var rightNode = node.Split();
+            node.Merge(rightNode);
+            Assert.True(node.ContainsKey(key1));
+            Assert.True(node.ContainsKey(key2));
+        }
+
+        [Fact]
+        public void Merge_Reads_All_Keys()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node = new DataNode<DbInt32, DbInt32>(key1, value1);
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node.Insert(key2, value2);
+            var rightNode = node.Split();
+            node.Merge(rightNode);
+            Assert.Contains(value1, node.Read(key1));
+            Assert.Contains(value2, node.Read(key2));
+            var values = node
+                .Read(key1, key2)
+                .Select(kvp => kvp.Value);
+            Assert.Contains(value1, values);
+            Assert.Contains(value2, values);
+        }
+
+        [Fact]
+        public void Merge_Sets_RightSibling()
+        {
+            var key1 = (DbInt32)1;
+            var value1 = (DbInt32)1;
+            var node1 = new DataNode<DbInt32, DbInt32>(key1, value1);
+
+            var key2 = (DbInt32)2;
+            var value2 = (DbInt32)2;
+            node1.Insert(key2, value2);
+
+            var key3 = (DbInt32)3;
+            var value3 = (DbInt32)3;
+            node1.Insert(key3, value3);
+
+            var node2 = node1.Split();
+            var node3 = node2.Split();
+
+            node1.Merge(node2);
+            Assert.Equal(node3, node1.RightSibling);
+        }
+
         //        [Theory]
         //        [InlineData(1)]
         //        [InlineData(2)]
@@ -315,44 +372,6 @@ namespace BTrees.Tests.Nodes
         //            {
         //                Assert.True(node.TryRead(rndArray[i], out var actualValue));
         //                Assert.Equal(rndArray[i], actualValue);
-        //            }
-        //        }
-
-        //        [Fact]
-        //        public void Merge_Left_Contains_All_Keys()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
-
-        //            var (left, right, _) = node.Split();
-        //            var mergedNode = left.Merge(right);
-
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                Assert.True(mergedNode.ContainsKey(i));
-        //            }
-        //        }
-
-        //        [Fact]
-        //        public void Merge_Right_Contains_All_Keys()
-        //        {
-        //            var size = 10;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                node.Insert(i, i);
-        //            }
-
-        //            var (left, right, _) = node.Split();
-        //            var mergedNode = right.Merge(left);
-
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                Assert.True(mergedNode.ContainsKey(i));
         //            }
         //        }
     }

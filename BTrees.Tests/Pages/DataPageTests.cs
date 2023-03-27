@@ -198,6 +198,24 @@ namespace BTrees.Tests.Pages
             }
         }
 
+        [Fact]
+        public void Read_Range_Returns_All_Values()
+        {
+            var page = DataPage<DbInt32, DbInt32>.Empty;
+            for (var key = 0; key < 10; ++key)
+            {
+                page = page.Insert(key, key);
+            }
+            var values = page
+                .Read(0..10)
+                .Select(kvp => kvp.Value);
+            Assert.Equal(10, values.Count());
+            for (var key = 0; key < 10; ++key)
+            {
+                Assert.Contains(key, values);
+            }
+        }
+
         [Theory]
         [InlineData(1)]
         [InlineData(2)]
