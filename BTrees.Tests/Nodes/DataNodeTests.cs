@@ -7,23 +7,6 @@ namespace BTrees.Tests.Nodes
     {
         private readonly int nodeSize = 1024 * 2;
 
-        public DataNodeTests()
-        {
-            DataNode<DbInt32, DbInt32>.SetMaxSize(this.nodeSize);
-        }
-
-        [Fact]
-        public void MaxSize_IsSet()
-        {
-            Assert.Equal(this.nodeSize, DataNode<DbInt32, DbInt32>.MaxSize);
-        }
-
-        [Fact]
-        public void HalfSize_IsSet()
-        {
-            Assert.Equal(this.nodeSize >> 1, DataNode<DbInt32, DbInt32>.HalfSize);
-        }
-
         [Fact]
         public void ContainsKey_Is_True_From_Newly_Constructed()
         {

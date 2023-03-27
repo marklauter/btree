@@ -1,16 +1,22 @@
-﻿namespace BTrees.Nodes
+﻿using BTrees.Types;
+
+namespace BTrees.Nodes
 {
     internal interface INode<TKey, TValue>
         : IComparable<INode<TKey, TValue>>
-        where TKey : IComparable<TKey>
-        where TValue : IComparable<TValue>
+        where TKey : ISizeable, IComparable<TKey>
+        where TValue : ISizeable, IComparable<TValue>
     {
         int Length { get; }
         bool IsOverflow { get; }
         bool IsUnderflow { get; }
         int Size { get; }
+        int MaxSize { get; }
+        int HalfSize { get; }
 
         INode<TKey, TValue>? RightSibling { get; }
+
+        bool HasRightSibling { get; }
 
         int Count();
 
