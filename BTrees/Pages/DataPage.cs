@@ -4,10 +4,16 @@ using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
 {
+    // todo: basing full/overflow/underflow on data size was misguided
+    // todo: better to go back to count and let the btree decide the value of K based on the size of the data types
+    // todo: this means you can't store strings in the btree, but this is okay as the actual data to be stored in the btree will be page id values
+    // todo: review ImmutableInterlocked to see if node and page can be reunified into a single class
+    // todo: the reason I say this is the main reason for the decoupling was to allow node to lock on immutable datapage changes, but we can just lock the tuples array with ImmutableInterlocked instead
+
     internal readonly partial struct DataPage<TKey, TValue>
         : IComparable<DataPage<TKey, TValue>>
-        where TKey : IDbType, IComparable<TKey>
-        where TValue : IDbType, IComparable<TValue>
+        where TKey : ISizeable, IComparable<TKey>
+        where TValue : ISizeable, IComparable<TValue>
     {
         private readonly ImmutableArray<KeyValuesTuple> tuples;
         private readonly int searchHigh;

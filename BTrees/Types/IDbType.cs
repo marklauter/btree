@@ -1,11 +1,9 @@
 ﻿namespace BTrees.Types
 {
-    // todo: checkout System.BitConverter
-
     public interface IDbType
+        : ISizeable
     {
         DbType Type { get; }
-        int Size { get; }
     }
 
     public interface IDbType<T>

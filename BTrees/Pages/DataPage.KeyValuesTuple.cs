@@ -4,8 +4,10 @@ using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
 {
-    internal readonly partial struct DataPage<TKey, TValue> where TKey : IDbType, IComparable<TKey>
-        where TValue : IDbType, IComparable<TValue>
+    internal readonly partial struct DataPage<TKey, TValue>
+        : IComparable<DataPage<TKey, TValue>>
+        where TKey : ISizeable, IComparable<TKey>
+        where TValue : ISizeable, IComparable<TValue>
     {
         private readonly record struct KeyValuesTuple
             : IComparable<KeyValuesTuple>
