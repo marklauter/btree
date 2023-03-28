@@ -5,7 +5,12 @@ namespace BTrees.Tests.Nodes
 {
     public sealed class DataNodeTests
     {
-        private readonly int nodeSize = 1024 * 2;
+        static DataNodeTests()
+        {
+            Ids = UniqueIdFactory.Generate(20000);
+        }
+
+        private static readonly DbUniqueId[] Ids;
 
         [Fact]
         public void ContainsKey_Is_True_From_Newly_Constructed()
@@ -322,40 +327,67 @@ namespace BTrees.Tests.Nodes
             Assert.Equal(node3, node1.RightSibling);
         }
 
-        //        [Theory]
-        //        [InlineData(1)]
-        //        [InlineData(2)]
-        //        [InlineData(5)]
-        //        [InlineData(7)]
-        //        [InlineData(13)]
-        //        public void Multi_Threaded_Insert_Adds_All_Elements_In_Correct_Order(int rndSeed)
-        //        {
-        //            var size = 5000;
-        //            var node = DataNode<int, int>.Empty(size);
-        //            var rndArray = UniqueRandoms(rndSeed, size, size);
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(25)]
+        [InlineData(50)]
+        [InlineData(100)]
+        [InlineData(250)]
+        [InlineData(500)]
+        [InlineData(1000)]
+        [InlineData(2000)]
+        public void Multi_Threaded_Insert_Adds_All_Elements_In_Correct_Order(int concurrencyLimit)
+        {
+            var node = new DataNode<DbInt32, DbUniqueId>(-1, DbUniqueId.NewId());
+            var tasks = new Task[concurrencyLimit];
+            for (var taskId = 0; taskId < concurrencyLimit; ++taskId)
+            {
+                var key = taskId;
+                var value = Ids[key];
+                tasks[taskId] = Task.Run(() => node.Insert(key, value));
+            }
 
-        //            var tasks = new Task[size];
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                var key = rndArray[i];
-        //                var value = key;
-        //                tasks[i] = Task.Run(() => node.Insert(key, value));
-        //            }
+            Task.WaitAll(tasks);
+            Assert.Equal(concurrencyLimit + 1, node.Count());
 
-        //            Task.WaitAll(tasks);
-        //            Assert.Equal(size, node.Count);
+            for (var key = 0; key < concurrencyLimit; ++key)
+            {
+                Assert.True(node.ContainsKey(key));
+            }
 
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                var index = node.BinarySearch(rndArray[i]);
-        //                Assert.Equal(rndArray[i], index);
-        //            }
+            for (var key = 0; key < concurrencyLimit; ++key)
+            {
+                var values = node.Read(key);
+                Assert.Contains(Ids[key], values);
+            }
+        }
 
-        //            for (var i = 0; i < size; ++i)
-        //            {
-        //                Assert.True(node.TryRead(rndArray[i], out var actualValue));
-        //                Assert.Equal(rndArray[i], actualValue);
-        //            }
-        //        }
+        [Theory]
+        [InlineData(2000)]
+        [InlineData(4000)]
+        [InlineData(8000)]
+        [InlineData(16000)]
+        public void Single_Threaded_Insert_Adds_All_Elements_In_Correct_Order(int keyCount)
+        {
+            var node = new DataNode<DbInt32, DbUniqueId>(-1, DbUniqueId.NewId());
+            for (var key = 0; key < keyCount; ++key)
+            {
+                node.Insert(key, Ids[key]);
+            }
+
+            Assert.Equal(keyCount + 1, node.Count());
+
+            for (var key = 0; key < keyCount; ++key)
+            {
+                Assert.True(node.ContainsKey(key));
+            }
+
+            for (var key = 0; key < keyCount; ++key)
+            {
+                var values = node.Read(key);
+                Assert.Contains(Ids[key], values);
+            }
+        }
     }
 }
