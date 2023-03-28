@@ -13,9 +13,18 @@ namespace BTrees.Nodes
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
+        private const int DefaultMaxSize = 1024 * 4;
+
+        public static DataNode<TKey, TValue> Empty()
+        {
+            return new DataNode<TKey, TValue>(
+                new PageAndSibling(DataPage<TKey, TValue>.Empty, null),
+                DefaultMaxSize);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DataNode(TKey key, TValue value)
-            : this(key, value, 1024 * 4)
+            : this(key, value, DefaultMaxSize)
         {
         }
 
