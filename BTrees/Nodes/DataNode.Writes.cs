@@ -1,5 +1,4 @@
-﻿using BenchmarkDotNet.Attributes;
-using BTrees.Types;
+﻿using BTrees.Types;
 
 namespace BTrees.Nodes
 {
@@ -8,7 +7,6 @@ namespace BTrees.Nodes
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
-        [Benchmark]
         public void Merge(INode<TKey, TValue> node)
         {
             lock (this)
@@ -29,7 +27,6 @@ namespace BTrees.Nodes
             }
         }
 
-        [Benchmark]
         public INode<TKey, TValue> Split()
         {
             lock (this)
@@ -53,7 +50,6 @@ namespace BTrees.Nodes
             }
         }
 
-        [Benchmark]
         public void Remove(TKey key)
         {
             lock (this)
@@ -68,7 +64,6 @@ namespace BTrees.Nodes
             }
         }
 
-        [Benchmark]
         public void Remove(TKey key, TValue value)
         {
             lock (this)
@@ -83,7 +78,6 @@ namespace BTrees.Nodes
             }
         }
 
-        [Benchmark]
         public void Insert(TKey key, TValue value)
         {
             lock (this)
