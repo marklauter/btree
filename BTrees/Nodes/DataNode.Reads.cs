@@ -1,4 +1,5 @@
-﻿using BTrees.Types;
+﻿using BenchmarkDotNet.Attributes;
+using BTrees.Types;
 using System.Runtime.CompilerServices;
 
 namespace BTrees.Nodes
@@ -8,30 +9,35 @@ namespace BTrees.Nodes
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
+        [Benchmark]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Count()
         {
             return this.Page.Count();
         }
 
+        [Benchmark]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public INode<TKey, TValue> Fork()
         {
             return new DataNode<TKey, TValue>(Volatile.Read(ref this.pageAndSibling), this.MaxSize);
         }
 
+        [Benchmark]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key)
         {
             return this.Page.ContainsKey(key);
         }
 
+        [Benchmark]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<TValue> Read(TKey key)
         {
             return this.Page.Read(key);
         }
 
+        [Benchmark]
         public IEnumerable<(TKey Key, TValue Value)> Read(TKey leftBoundingKey, TKey rightBoundingKey)
         {
             var pageAndSibling = Volatile.Read(ref this.pageAndSibling);
@@ -57,6 +63,7 @@ namespace BTrees.Nodes
                 : values;
         }
 
+        [Benchmark]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(INode<TKey, TValue>? other)
         {
