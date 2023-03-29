@@ -1,4 +1,5 @@
 ﻿using BTrees.Types;
+using System.Diagnostics.Contracts;
 
 namespace BTrees.Pages
 {
@@ -7,6 +8,7 @@ namespace BTrees.Pages
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
+        [Pure]
         public DataPage<TKey, TValue> Remove(TKey key)
         {
             var page = this;
@@ -20,6 +22,7 @@ namespace BTrees.Pages
             return page;
         }
 
+        [Pure]
         public DataPage<TKey, TValue> Remove(TKey key, TValue value)
         {
             var page = this;
@@ -40,6 +43,7 @@ namespace BTrees.Pages
             return page;
         }
 
+        [Pure]
         public DataPage<TKey, TValue> Insert(TKey key, TValue value)
         {
             var page = this;

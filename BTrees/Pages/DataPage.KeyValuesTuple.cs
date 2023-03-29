@@ -1,5 +1,6 @@
 ﻿using BTrees.Types;
 using System.Collections.Immutable;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
@@ -34,24 +35,28 @@ namespace BTrees.Pages
             public int Length { get; }
             public int Size { get; }
 
+            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int IndexOf(TValue value)
             {
                 return ImmutableArray.BinarySearch(this.Values, value);
             }
 
+            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Contains(TValue value)
             {
                 return this.IndexOf(value) >= 0;
             }
 
+            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public KeyValuesTuple Insert(int index, TValue value)
             {
                 return new KeyValuesTuple(this.Key, this.Values.Insert(index, value));
             }
 
+            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public KeyValuesTuple Remove(TValue value)
             {
@@ -61,12 +66,14 @@ namespace BTrees.Pages
                     : new KeyValuesTuple(this.Key, this.Values.RemoveAt(index));
             }
 
+            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int CompareTo(KeyValuesTuple other)
             {
                 return this.Key.CompareTo(other.Key);
             }
 
+            [Pure]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int CompareTo(TKey? other)
             {

@@ -1,5 +1,6 @@
 ﻿using BTrees.Types;
 using System.Collections.Immutable;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
@@ -9,12 +10,14 @@ namespace BTrees.Pages
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Count()
         {
             return this.tuples.Sum(t => t.Length);
         }
 
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal int IndexOf(TKey key)
         {
@@ -40,12 +43,14 @@ namespace BTrees.Pages
             return ~low;
         }
 
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key)
         {
             return this.IndexOf(key) >= 0;
         }
 
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ImmutableArray<TValue> Read(TKey key)
         {
@@ -60,6 +65,8 @@ namespace BTrees.Pages
                 : ImmutableArray<TValue>.Empty;
         }
 
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerable<(TKey Key, TValue Value)> Read(Range range)
         {
             return this.tuples[range]
@@ -68,6 +75,8 @@ namespace BTrees.Pages
                 (tuple, value) => (tuple.Key, value));
         }
 
+        [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(DataPage<TKey, TValue> other)
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference. - this.minKey is not null if this.IsEmpty is false

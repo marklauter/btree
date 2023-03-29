@@ -1,4 +1,5 @@
 ﻿using BTrees.Types;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
@@ -8,6 +9,7 @@ namespace BTrees.Pages
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SplitResult Split()
         {
@@ -24,6 +26,7 @@ namespace BTrees.Pages
                 new DataPage<TKey, TValue>(this.tuples[middle..length]));
         }
 
+        [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DataPage<TKey, TValue> Merge(DataPage<TKey, TValue> otherPage)
         {
