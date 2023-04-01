@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace BTrees.Types
 {
-    public readonly record struct DbBinary(byte[] Value)
+    public sealed record DbBinary(byte[] Value)
         : IDbType<byte[]>
         , IComparable<DbBinary>
         , IEquatable<DbBinary>
@@ -16,9 +16,11 @@ namespace BTrees.Types
 
         DbType IDbType.Type => Type;
 
-        public int CompareTo(DbBinary other)
+        public int CompareTo(DbBinary? other)
         {
-            return this.CompareTo((IDbType<byte[]>)other);
+            return other is null
+                ? -1
+                : this.CompareTo((IDbType<byte[]>)other);
         }
 
         public int CompareTo(IDbType<byte[]>? other)
@@ -33,9 +35,9 @@ namespace BTrees.Types
             return left.SequenceCompareTo(right);
         }
 
-        public bool Equals(DbBinary other)
+        public bool Equals(DbBinary? other)
         {
-            return this.CompareTo(other) == 0;
+            return other is not null && this.CompareTo(other) == 0;
         }
 
         public override int GetHashCode()

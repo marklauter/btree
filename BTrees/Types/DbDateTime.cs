@@ -2,7 +2,7 @@
 
 namespace BTrees.Types
 {
-    public readonly record struct DbDateTime(DateTime Value)
+    public sealed record DbDateTime(DateTime Value)
         : IDbType<DateTime>
         , IComparable<DbDateTime>
         , IEquatable<DbDateTime>
@@ -15,9 +15,11 @@ namespace BTrees.Types
 
         DbType IDbType.Type => Type;
 
-        public int CompareTo(DbDateTime other)
+        public int CompareTo(DbDateTime? other)
         {
-            return this.Value.CompareTo(other.Value);
+            return other is null
+                ? -1
+                : this.Value.CompareTo(other.Value);
         }
 
         public int CompareTo(IDbType<DateTime>? other)
@@ -27,9 +29,9 @@ namespace BTrees.Types
                 : this.Value.CompareTo(other.Value);
         }
 
-        public bool Equals(DbDateTime other)
+        public bool Equals(DbDateTime? other)
         {
-            return this.Value.Equals(other.Value);
+            return other is not null && this.Value.Equals(other.Value);
         }
 
         public override int GetHashCode()

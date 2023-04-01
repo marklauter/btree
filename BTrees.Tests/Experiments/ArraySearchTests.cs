@@ -1,4 +1,5 @@
 ﻿using BTrees.Types;
+using System.Buffers;
 using System.Collections.Immutable;
 
 namespace BTrees.Tests.Experiments
@@ -52,9 +53,6 @@ namespace BTrees.Tests.Experiments
         [InlineData(50)]
         [InlineData(100)]
         [InlineData(250)]
-        [InlineData(500)]
-        [InlineData(1000)]
-        [InlineData(2000)]
         public void RandomIntFactoryTest(int count)
         {
             var ids = RandomIntFactory.Generate(count);
@@ -78,9 +76,6 @@ namespace BTrees.Tests.Experiments
         [InlineData(50)]
         [InlineData(100)]
         [InlineData(250)]
-        [InlineData(500)]
-        [InlineData(1000)]
-        [InlineData(2000)]
         public void ArrayShiftRightBench(int count)
         {
             var values = UniqueIdFactory.Generate(count);
@@ -109,9 +104,6 @@ namespace BTrees.Tests.Experiments
         [InlineData(50)]
         [InlineData(100)]
         [InlineData(250)]
-        [InlineData(500)]
-        [InlineData(1000)]
-        [InlineData(2000)]
         public void DualArrayBench(int count)
         {
             var values = UniqueIdFactory.Generate(count);
@@ -162,9 +154,6 @@ namespace BTrees.Tests.Experiments
         [InlineData(50)]
         [InlineData(100)]
         [InlineData(250)]
-        [InlineData(500)]
-        [InlineData(1000)]
-        [InlineData(2000)]
         public void DualSpanBench(int count)
         {
             var values = UniqueIdFactory.Generate(count);
@@ -206,6 +195,36 @@ namespace BTrees.Tests.Experiments
 
                 Assert.Equal(iarray, source[..(i + 1)].ToArray());
             }
+        }
+
+        [Theory]
+        [InlineData(50)]
+        [InlineData(100)]
+        [InlineData(250)]
+        public void SingleSpan(int count)
+        {
+            var values = RandomIntFactory.Generate(count).AsSpan();
+            var sortedArray = ArrayPool<int>.Shared.Rent(count);
+            var sorted = sortedArray.AsSpan();
+            var ima = ImmutableArray<int>.Empty;
+
+            for (var i = 0; i < count; ++i)
+            {
+                var value = values[i];
+
+                var key = sorted[..i].BinarySearch(value);
+                key = key > 0 ? key : ~key;
+
+                ima = ima.Insert(key, value);
+
+                sorted[key..i]
+                    .CopyTo(sorted[(key + 1)..(i + 1)]);
+                sorted[key] = value;
+
+                Assert.Equal(ima, sorted[..(i + 1)].ToArray());
+            }
+
+            ArrayPool<int>.Shared.Return(sortedArray);
         }
     }
 }

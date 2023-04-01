@@ -23,7 +23,7 @@ namespace BTrees.Pages
         {
             var low = 0;
             var high = this.searchHigh;
-            var tuples = this.tuples;
+            var tuples = this.tuples.AsSpan();
 
             while (low <= high)
             {

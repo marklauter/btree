@@ -2,7 +2,7 @@
 
 namespace BTrees.Types
 {
-    public readonly record struct DbTimeSpan(TimeSpan Value)
+    public sealed record DbTimeSpan(TimeSpan Value)
         : IDbType<TimeSpan>
         , IComparable<DbTimeSpan>
         , IEquatable<DbTimeSpan>
@@ -16,9 +16,11 @@ namespace BTrees.Types
 
         DbType IDbType.Type => Type;
 
-        public int CompareTo(DbTimeSpan other)
+        public int CompareTo(DbTimeSpan? other)
         {
-            return this.Value.CompareTo(other.Value);
+            return other is null
+                ? -1
+                : this.Value.CompareTo(other.Value);
         }
 
         public int CompareTo(IDbType<TimeSpan>? other)
@@ -28,9 +30,9 @@ namespace BTrees.Types
                 : this.Value.CompareTo(other.Value);
         }
 
-        public bool Equals(DbTimeSpan other)
+        public bool Equals(DbTimeSpan? other)
         {
-            return this.Value.Equals(other.Value);
+            return other is not null && this.Value.Equals(other.Value);
         }
 
         public override int GetHashCode()

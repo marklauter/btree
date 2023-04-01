@@ -2,7 +2,7 @@
 
 namespace BTrees.Types
 {
-    public readonly record struct DbText
+    public sealed record DbText
         : IDbType<string>
         , IComparable<DbText>
         , IEquatable<DbText>
@@ -27,9 +27,11 @@ namespace BTrees.Types
 
         DbType IDbType.Type => Type;
 
-        public int CompareTo(DbText other)
+        public int CompareTo(DbText? other)
         {
-            return String.Compare(this.Value, other.Value, StringComparison.OrdinalIgnoreCase);
+            return other is null
+                ? -1
+                : String.Compare(this.Value, other.Value, StringComparison.OrdinalIgnoreCase);
         }
 
         public int CompareTo(IDbType<string>? other)
@@ -39,9 +41,9 @@ namespace BTrees.Types
                 : String.Compare(this.Value, other.Value, StringComparison.OrdinalIgnoreCase);
         }
 
-        public bool Equals(DbText other)
+        public bool Equals(DbText? other)
         {
-            return this.Value.Equals(other.Value, StringComparison.OrdinalIgnoreCase);
+            return other is not null && this.Value.Equals(other.Value, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()

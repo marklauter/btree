@@ -2,7 +2,7 @@
 
 namespace BTrees.Types
 {
-    public readonly record struct DbUInt16(ushort Value)
+    public sealed record DbUInt16(ushort Value)
         : IDbType<ushort>
         , IComparable<DbUInt16>
         , IEquatable<DbUInt16>
@@ -15,9 +15,11 @@ namespace BTrees.Types
 
         DbType IDbType.Type => Type;
 
-        public int CompareTo(DbUInt16 other)
+        public int CompareTo(DbUInt16? other)
         {
-            return this.Value.CompareTo(other.Value);
+            return other is null
+                ? -1
+                : this.Value.CompareTo(other.Value);
         }
 
         public int CompareTo(IDbType<ushort>? other)
@@ -27,9 +29,9 @@ namespace BTrees.Types
                 : this.Value.CompareTo(other.Value);
         }
 
-        public bool Equals(DbUInt16 other)
+        public bool Equals(DbUInt16? other)
         {
-            return this.Value.Equals(other.Value);
+            return other is not null && this.Value.Equals(other.Value);
         }
 
         public override int GetHashCode()

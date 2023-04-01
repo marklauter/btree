@@ -212,7 +212,7 @@ namespace BTrees.Tests.Pages
             Assert.Equal(10, values.Count());
             for (var key = 0; key < 10; ++key)
             {
-                Assert.Contains(key, values);
+                Assert.Contains((DbInt32)key, values);
             }
         }
 

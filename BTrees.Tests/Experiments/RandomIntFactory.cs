@@ -8,19 +8,10 @@
             var hashset = new HashSet<int>();
             while (hashset.Count < length)
             {
-#pragma warning disable IDE0058 // Expression value is never used
-                hashset.Add(random.Next(0, length));
-#pragma warning restore IDE0058 // Expression value is never used
+                _ = hashset.Add(random.Next(0, length));
             }
 
-            var i = 0;
-            var ids = new int[length];
-            foreach (var id in hashset)
-            {
-                ids[i++] = id;
-            }
-
-            return ids;
+            return hashset.ToArray();
         }
     }
 }
