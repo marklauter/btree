@@ -21,7 +21,7 @@ namespace BTrees.Types
         public const int Size = sizeof(int);
 
         private readonly int size;
-        int ISizeable.Size => this.size;
+        int ISizeable.ByteSize => this.size;
 
         public const DbType Type = DbType.Text;
 
@@ -48,7 +48,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Type, this.Value, ((IDbType)this).Size);
+            return HashCode.Combine(Type, this.Value, ((IDbType)this).ByteSize);
         }
 
         public static bool operator <(DbText left, DbText right)

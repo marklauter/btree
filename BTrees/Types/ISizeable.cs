@@ -5,6 +5,6 @@
 
     public interface ISizeable
     {
-        int Size { get; }
+        int ByteSize { get; }
     }
 }

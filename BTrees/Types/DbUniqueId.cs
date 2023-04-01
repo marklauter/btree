@@ -9,7 +9,7 @@ namespace BTrees.Types
     {
         public const int Size = 16;
 
-        int ISizeable.Size => Size;
+        int ISizeable.ByteSize => Size;
 
         public const DbType Type = DbType.UniqueId;
 

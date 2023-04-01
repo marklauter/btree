@@ -10,7 +10,7 @@ namespace BTrees.Types
     {
         public const int Size = sizeof(int);
 
-        int ISizeable.Size => Size + this.Value.Length;
+        int ISizeable.ByteSize => Size + this.Value.Length;
 
         public const DbType Type = DbType.Binary;
 
@@ -42,7 +42,7 @@ namespace BTrees.Types
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Type, this.Value, ((IDbType)this).Size);
+            return HashCode.Combine(Type, this.Value, ((IDbType)this).ByteSize);
         }
 
         public static bool operator <(DbBinary left, DbBinary right)
