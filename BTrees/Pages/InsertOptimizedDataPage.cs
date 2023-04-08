@@ -5,40 +5,37 @@ using System.Runtime.CompilerServices;
 namespace BTrees.Pages
 {
     /// <summary>
-    /// data page optimized for right side appends, but capable of insertions
-    /// though it supports left side insertions, these require copy of the entire page
+    /// data page optimized for random access insertions into sorted page
     /// </summary>
     /// <typeparam name="TKey"></typeparam>
     /// <typeparam name="TValue"></typeparam>
-    public sealed class RightOptimizedDataPage<TKey, TValue>
+    public sealed class InsertOptimizedDataPage<TKey, TValue>
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
     {
         public int Count => Volatile.Read(ref this.tuples).Count;
 
+        private int startOffset;
+        private readonly int midpoint;
         private KeyValueCollection<TKey, TValue> tuples;
 
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RightOptimizedDataPage<TKey, TValue> Empty()
+        public static InsertOptimizedDataPage<TKey, TValue> Empty(int size)
         {
-            return new RightOptimizedDataPage<TKey, TValue>();
+            return new InsertOptimizedDataPage<TKey, TValue>(size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private RightOptimizedDataPage()
-        {
-            this.tuples = KeyValueCollection<TKey, TValue>.Empty();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RightOptimizedDataPage(int size)
+        public InsertOptimizedDataPage(int size)
         {
             this.tuples = new KeyValueCollection<TKey, TValue>(size);
+            this.midpoint = (size >> 1) - 1;
+            this.startOffset = this.midpoint;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private RightOptimizedDataPage(KeyValueCollection<TKey, TValue> tuples)
+        private InsertOptimizedDataPage(KeyValueCollection<TKey, TValue> tuples)
         {
             this.tuples = tuples;
         }
@@ -48,17 +45,20 @@ namespace BTrees.Pages
         internal int BinarySearch(TKey key)
         {
             var tuples = Volatile.Read(ref this.tuples);
-            return BinarySearch(tuples, key);
+            return this.BinarySearch(tuples, key);
         }
 
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int BinarySearch(KeyValueCollection<TKey, TValue> tuples, TKey key)
+        private int BinarySearch(KeyValueCollection<TKey, TValue> tuples, TKey key)
         {
-            var low = 0;
-            var high = tuples.Count - 1;
-            var keys = tuples.Items.AsSpan(..tuples.Count);
+            var count = tuples.Count;
+            var start = this.startOffset;
+            var end = start + tuples.Count;
+            var keys = tuples.Items.AsSpan(start..end);
 
+            var low = 0;
+            var high = count - 1;
             while (low <= high)
             {
                 var middle = (low + high) >> 1;
@@ -79,23 +79,65 @@ namespace BTrees.Pages
 
         public void Add(TKey key, TValue value)
         {
+            // todo: throw when size is exceeded as this datastructure can't allow underlying tuple collection to grow  
             lock (this)
             {
                 var tuples = Volatile.Read(ref this.tuples);
+                var startOffset = Volatile.Read(ref this.startOffset);
 
-                // find the key insertion point
-                var keyIndex = tuples.Count != 0
-                    ? BinarySearch(tuples, key)
-                    : 0;
+                var count = tuples.Count;
+                if (count == 0)
+                {
+                    // set first value at midpoint left - ez mode
+                    tuples = this.Append(tuples, startOffset, new(key, value));
+                }
+                else
+                {
+                    // todo: handle special case where there's room, but can't shift left anymore.
+                    // uh.. something like startOffset == 0
 
-                keyIndex = keyIndex < 0 ? ~keyIndex : keyIndex;
+                    // find the key insertion point
+                    // if empty then skip binary search and insert at start offset which is the midpoint and don't move the start offset
+                    var virtualAddress = count == 1
+                        ? tuples.Items[startOffset].Key.CompareTo(key) > 0
+                            ? 0 // will append left
+                            : count // will append right
+                        : this.BinarySearch(tuples, key);
 
-                // pick an insertion strategy
-                tuples = keyIndex == tuples.Count
-                    ? Append(tuples, keyIndex, new(key, value))
-                    : Insert(tuples, keyIndex, new(key, value));
+                    virtualAddress = virtualAddress < 0
+                        ? ~virtualAddress
+                        : virtualAddress;
 
-                // update tuples
+                    var physicalAddress = startOffset + virtualAddress;
+
+                    // todo: perform range checks
+
+                    // pick an insertion strategy
+                    if (virtualAddress == 0)
+                    {
+                        // append left
+                        var insertAddress = physicalAddress - 1;
+                        tuples = this.Append(tuples, insertAddress, new(key, value));
+                        startOffset = insertAddress;
+                    }
+                    else if (virtualAddress == count)
+                    {
+                        // append right
+                        tuples = this.Append(tuples, physicalAddress, new(key, value));
+                    }
+                    else if (physicalAddress < this.midpoint)
+                    {
+                        tuples = InsertWithLeftShift(tuples, physicalAddress, new(key, value));
+                        --startOffset;
+                    }
+                    else
+                    {
+                        tuples = InsertWithRightShift(tuples, physicalAddress, new(key, value));
+                    }
+
+                    Volatile.Write(ref this.startOffset, startOffset);
+                }
+
                 Volatile.Write(ref this.tuples, tuples);
             }
         }
@@ -103,7 +145,7 @@ namespace BTrees.Pages
         // this is the optimal case - just insert at the end without clone
         [Pure]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static KeyValueCollection<TKey, TValue> Append(
+        private KeyValueCollection<TKey, TValue> Append(
             KeyValueCollection<TKey, TValue> tuples,
             int index,
             KeyValueTuple<TKey, TValue> tuple)
@@ -115,7 +157,21 @@ namespace BTrees.Pages
 
         // this is the suboptimal case - clone, grow if required, set new count and shift tuples to the right for insert
         [Pure]
-        private static KeyValueCollection<TKey, TValue> Insert(
+        private static KeyValueCollection<TKey, TValue> InsertWithLeftShift(
+            KeyValueCollection<TKey, TValue> tuples,
+            int index,
+            KeyValueTuple<TKey, TValue> tuple)
+        {
+            tuples = tuples.Clone(tuples.Count + 1);
+            var end = tuples.Count;
+            var items = tuples.Items.AsSpan(..end);
+            items[index..(end - 1)].CopyTo(items[(index + 1)..]);
+            items[index] = tuple;
+            return tuples;
+        }
+
+        [Pure]
+        private static KeyValueCollection<TKey, TValue> InsertWithRightShift(
             KeyValueCollection<TKey, TValue> tuples,
             int index,
             KeyValueTuple<TKey, TValue> tuple)
@@ -133,7 +189,7 @@ namespace BTrees.Pages
         public bool ContainsKey(TKey key)
         {
             var tuples = Volatile.Read(ref this.tuples);
-            return tuples.Count != 0 && BinarySearch(tuples, key) >= 0;
+            return tuples.Count != 0 && this.BinarySearch(tuples, key) >= 0;
         }
 
         [Pure]
@@ -146,7 +202,7 @@ namespace BTrees.Pages
                 return Span<KeyValueTuple<TKey, TValue>>.Empty;
             }
 
-            var index = BinarySearch(tuples, key);
+            var index = this.BinarySearch(tuples, key);
             if (index < 0)
             {
                 return Span<KeyValueTuple<TKey, TValue>>.Empty;

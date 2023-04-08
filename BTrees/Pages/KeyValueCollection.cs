@@ -10,8 +10,10 @@ namespace BTrees.Pages
     {
         private const int MIN_SIZE = 16;
 
-        public static KeyValueCollection<TKey, TValue> Empty { get; }
-            = new KeyValueCollection<TKey, TValue>(MIN_SIZE);
+        public static KeyValueCollection<TKey, TValue> Empty()
+        {
+            return new KeyValueCollection<TKey, TValue>(MIN_SIZE);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public KeyValueCollection(int size)
@@ -42,10 +44,9 @@ namespace BTrees.Pages
 
             // copy old array to new array
             var items = new KeyValueTuple<TKey, TValue>[newLength];
-            var end = this.Count - 1;
             this.Items
-                .AsSpan(..end)
-                .CopyTo(items.AsSpan(..end));
+                .AsSpan(..this.Count)
+                .CopyTo(items.AsSpan(..this.Count));
 
             // return new collection
             return new KeyValueCollection<TKey, TValue>(items, newCount);

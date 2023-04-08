@@ -10,7 +10,7 @@ namespace BTrees.Pages
     // todo: DataPage: review ImmutableInterlocked to see if node and page can be reunified into a single class
     // todo: DataPage: the reason I say this is the main reason for the decoupling was to allow node to lock on immutable datapage changes, but we can just lock the tuples array with ImmutableInterlocked instead
 
-    internal readonly partial struct DataPage<TKey, TValue>
+    public readonly partial struct DataPage<TKey, TValue>
         : IComparable<DataPage<TKey, TValue>>
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>

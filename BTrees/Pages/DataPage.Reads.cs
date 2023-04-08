@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace BTrees.Pages
 {
-    internal readonly partial struct DataPage<TKey, TValue>
+    public readonly partial struct DataPage<TKey, TValue>
         : IComparable<DataPage<TKey, TValue>>
         where TKey : ISizeable, IComparable<TKey>
         where TValue : ISizeable, IComparable<TValue>
